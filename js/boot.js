@@ -5,7 +5,7 @@
     history.replaceState(null, null, l.pathname.slice(0, -1) + d + l.hash);
   }
   const B = window.XT_BASE || '/';
-  const V = '?v=14';
+  const V = '?v=15';
   const PAGES = ['panels','servers','console','manage','users','config','schedule','plugins','account','customize','api','activity','members','access','worlds','startup','database','backup','advanced','files'];
   const SCRIPTS = ['app','panels'];
   try{
