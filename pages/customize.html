@@ -1,0 +1,21 @@
+<div class="manage-view" id="customizeOverlay">
+  <h1 class="heading" style="text-align:left; justify-content:flex-start;">Customize</h1>
+  <div class="plg-status" id="cuStatus"></div>
+  <div class="ac-grid">
+    <div class="ac-box"><h3>Add Custom Background</h3>
+      <div class="cu-drop" id="cuDrop" tabindex="0" role="button" aria-label="Upload background image">
+        <div class="cu-hint">Drag &amp; drop an image here<small>or tap to upload · JPG, PNG, WEBP, GIF</small></div>
+      </div>
+      <input type="file" id="cuFile" accept="image/jpeg,image/png,image/webp,image/gif" hidden>
+      <div class="ac-row">
+        <button type="button" class="plg-btn" id="cuApply" disabled>Apply</button>
+        <button type="button" class="plg-btn" id="cuUndo" disabled>Undo</button>
+      </div>
+    </div>
+    <div class="ac-box"><h3>Default background</h3>
+      <label class="cu-switch"><input type="checkbox" id="cuDefault" checked><i></i><span>Use default background</span></label>
+      <div class="cu-note" id="cuInfo"></div>
+    </div>
+  </div>
+</div>
+

@@ -1,0 +1,26 @@
+<div class="manage-view" id="apiOverlay">
+  <div class="ak-split">
+  <div>
+    <h1 class="heading" style="text-align:left; justify-content:flex-start;">API</h1>
+    <p class="subtext" style="text-align:left; margin-bottom:16px;">Use a key in the <code>X-API-Key</code> header with a <code>docId</code> to run the same actions you can run here.</p>
+    <div class="plg-status" id="apStatus"></div>
+    <div class="ac-box">
+      <h3>Create API key</h3>
+      <label class="ak-lab" for="apIps">Allowed IPs<small>one per row, empty allows any IP</small></label>
+      <textarea class="ak-ta" id="apIps" rows="4" spellcheck="false" autocomplete="off" placeholder="203.0.113.5&#10;198.51.100.0/24"></textarea>
+      <div class="ac-row">
+        <button type="button" class="plg-btn" id="apGen">Generate key</button>
+      </div>
+      <div class="ak-new" id="apNew">
+        <div class="ac-key" id="apKey"></div>
+        <div class="ac-row"><button type="button" class="plg-btn" id="apCopy">Copy</button><button type="button" class="plg-btn" id="apJson">Download JSON</button></div>
+      </div>
+    </div>
+  </div>
+  <div class="ak-right">
+    <h1 class="heading" style="text-align:left; justify-content:flex-start;">Saved keys</h1>
+    <div class="ak-grid" id="apList"></div>
+  </div>
+  </div>
+</div>
+

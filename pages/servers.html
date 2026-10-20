@@ -1,0 +1,143 @@
+<!-- Add / Remove Server: server type panel -->
+<div class="manage-view" id="serverTypeOverlay">
+  <button type="button" class="pn-back" id="serverTypeClose">← Back</button>
+  <h1 class="heading" style="text-align:left; justify-content:flex-start;">Server Type</h1>
+  <p class="subtext" style="text-align:left; margin-bottom:18px;">Choose one to continue.</p>
+  <div class="pn-grid">
+    <button type="button" id="typeVDS" class="pn-card" ><span class="pn-ico"><svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="3.5" y="4" width="17" height="6" rx="1.5" stroke="currentColor" stroke-width="1.8"/><rect x="3.5" y="14" width="17" height="6" rx="1.5" stroke="currentColor" stroke-width="1.8"/><circle cx="7" cy="7" r=".9" fill="currentColor"/><circle cx="7" cy="17" r=".9" fill="currentColor"/></svg></span><span class="pn-txt"><b>VDS</b><small>Virtual dedicated server</small></span><span class="pn-go">›</span></button>
+    <button type="button" id="typeVPS" class="pn-card" ><span class="pn-ico"><svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="4" y="5" width="16" height="14" rx="2" stroke="currentColor" stroke-width="1.8"/><path d="M8 10l2.5 2L8 14M13 14h3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="pn-txt"><b>VPS</b><small>Virtual private server</small></span><span class="pn-go">›</span></button>
+    <button type="button" id="typeCloud" class="pn-card" ><span class="pn-ico"><svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M7 18a4 4 0 010-8 5.5 5.5 0 0110.6 1.5A3.3 3.3 0 0117 18H7z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg></span><span class="pn-txt"><b>Cloud Storage</b><small>File and object storage</small></span><span class="pn-go">›</span></button>
+    <button type="button" id="typeDedicated" class="pn-card pn-main" ><span class="pn-ico"><svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 3l8 4.5v9L12 21l-8-4.5v-9L12 3z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M4 7.5l8 4.5 8-4.5M12 12v9" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg></span><span class="pn-txt"><b>Dedicated Resource Server</b><small>Minecraft, bots and databases</small></span><span class="pn-go">›</span></button>
+  </div>
+</div>
+
+<div class="manage-view" id="resourceTypeOverlay">
+  <button type="button" class="pn-back" id="resourceTypeClose">← Back</button>
+  <h1 class="heading" style="text-align:left; justify-content:flex-start;">Dedicated Resource Server</h1>
+  <p class="subtext" style="text-align:left; margin-bottom:18px;">Choose one to continue.</p>
+  <div class="pn-grid">
+    <button type="button" id="rtMinecraft" class="pn-card resource-type-btn" data-category="minecraft"><span class="pn-ico"><svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="4" y="4" width="16" height="16" rx="2" stroke="currentColor" stroke-width="1.8"/><path d="M4 12h16M12 4v16" stroke="currentColor" stroke-width="1.8"/></svg></span><span class="pn-txt"><b>Minecraft Server</b><small>Game server hosting</small></span><span class="pn-go">›</span></button>
+    <button type="button" id="rtDiscord" class="pn-card resource-type-btn" data-category="discord"><span class="pn-ico"><svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="5" y="8" width="14" height="11" rx="3" stroke="currentColor" stroke-width="1.8"/><path d="M12 8V5M9 13h.01M15 13h.01" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></span><span class="pn-txt"><b>Discord Bots</b><small>Bot hosting</small></span><span class="pn-go">›</span></button>
+    <button type="button" id="rtDatabase" class="pn-card resource-type-btn" data-category="database"><span class="pn-ico"><svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><ellipse cx="12" cy="6" rx="7.5" ry="2.8" stroke="currentColor" stroke-width="1.8"/><path d="M4.5 6v6c0 1.55 3.36 2.8 7.5 2.8s7.5-1.25 7.5-2.8V6M4.5 12v6c0 1.55 3.36 2.8 7.5 2.8s7.5-1.25 7.5-2.8v-6" stroke="currentColor" stroke-width="1.8"/></svg></span><span class="pn-txt"><b>Database</b><small>Managed databases</small></span><span class="pn-go">›</span></button>
+  </div>
+</div>
+
+<div class="manage-view" id="addServerOverlay">
+  <div class="pn-form">
+    <button type="button" class="pn-back" id="addServerClose">← Back</button>
+    <h1 class="heading" style="text-align:left; justify-content:flex-start;">Add Server</h1>
+    <p class="subtext" id="addServerSub" style="text-align:left; margin-bottom:20px;">Fill in the details for the new server.</p>
+
+    <form id="addServerForm" autocomplete="off">
+      <div class="field">
+        <label for="serverName">Server Name</label>
+        <input type="text" id="serverName" placeholder="e.g. Aincrad #1" required>
+      </div>
+
+      <div class="field">
+        <label>Server Duration</label>
+        <div class="duration-row">
+          <select id="serverDay" required></select>
+          <select id="serverMonth" required></select>
+          <select id="serverYear" required></select>
+        </div>
+      </div>
+
+      <div class="field">
+        <label for="serverBackground">Server Background</label>
+        <select id="serverBackground" required>
+          <option value="">Select a theme…</option>
+          <option value="https://raw.githubusercontent.com/xtremetechprograms/IMAGES/main/GOJO.png">Gojo Satoru</option>
+          <option value="https://raw.githubusercontent.com/xtremetechprograms/IMAGES/main/Kamado.png">Kamado Tanjiro</option>
+          <option value="https://raw.githubusercontent.com/xtremetechprograms/IMAGES/main/Light.png">Light Yagami</option>
+          <option value="https://raw.githubusercontent.com/xtremetechprograms/IMAGES/main/DrStone.png">Dr. Stone</option>
+          <option value="https://raw.githubusercontent.com/xtremetechprograms/IMAGES/main/AOT.png">Attack On Titan</option>
+          <option value="https://raw.githubusercontent.com/xtremetechprograms/IMAGES/main/Nature.png">Nature</option>
+          <option value="https://raw.githubusercontent.com/xtremetechprograms/IMAGES/main/Aurora.png">Aurora</option>
+          <option value="https://raw.githubusercontent.com/xtremetechprograms/IMAGES/main/Naruto.png">Naruto</option>
+          <option value="https://raw.githubusercontent.com/xtremetechprograms/IMAGES/main/DBSOG.png">Dragon Ball Super</option>
+          <option value="https://github.com/xtremetechprograms/IMAGES/blob/main/okmc.png?raw=true">Minecraft Lights</option>
+          <option value="https://github.com/xtremetechprograms/IMAGES/blob/main/bamboo.png?raw=true">Minecraft Bamboos</option>
+          <option value="https://github.com/xtremetechprograms/IMAGES/blob/main/mcnethercastle.png?raw=true">Minecraft Nether Castle</option>
+          <option value="https://github.com/xtremetechprograms/IMAGES/blob/main/mcend.png?raw=true">Minecraft End</option>
+          <option value="https://github.com/xtremetechprograms/IMAGES/blob/main/server.png?raw=true">Cloud Hosting 1</option>
+          <option value="https://github.com/xtremetechprograms/IMAGES/blob/main/c2.png?raw=true">Cloud Hosting 2</option>
+          <option value="https://github.com/xtremetechprograms/IMAGES/blob/main/dcbot.png?raw=true">Discord Bot 1</option>
+          <option value="https://github.com/xtremetechprograms/IMAGES/blob/main/dcb.png?raw=true">Discord Bot 2</option>
+        </select>
+      </div>
+
+      <div class="field">
+        <label for="serverLocation">Server Location</label>
+        <select id="serverLocation">
+          <option value="">No location</option>
+        </select>
+      </div>
+
+      <div class="field">
+        <label>Server Panel</label>
+        <div class="pn-chip" id="addServerPanel">Pterodactyl</div>
+      </div>
+
+      <div class="field">
+        <label for="serverCost">Server Cost</label>
+        <input type="text" id="serverCost" placeholder="e.g. $5.00 / month" required>
+      </div>
+
+      <div class="field">
+        <label for="serverUuid" id="serverUuidLabel">Server UUID</label>
+        <input type="text" id="serverUuid" placeholder="e.g. 3f29c1a2-..." required>
+      </div>
+
+      <div class="field">
+        <label for="serverOwnerEmail">Owner Email</label>
+        <input type="email" id="serverOwnerEmail" placeholder="owner@example.com" autocomplete="off">
+      </div>
+
+      <div class="field">
+        <label for="serverOwnerPass">Owner Password</label>
+        <input type="password" id="serverOwnerPass" placeholder="Min 6 characters" autocomplete="new-password">
+      </div>
+
+      <button type="submit" class="submit" id="createServerBtn">
+        <span>Create Server</span>
+      </button>
+    </form>
+  </div>
+</div>
+
+<!-- Remove Server panel: search, sort, pick -->
+<div class="manage-view" id="removeServerOverlay">
+  <div class="pn-form" style="max-width:860px;">
+    <button type="button" class="pn-back" id="removeServerClose">← Back</button>
+    <h1 class="heading" style="text-align:left; justify-content:flex-start;">Remove Server</h1>
+    <p class="subtext" id="removeServerSub" style="text-align:left; margin-bottom:16px;">Select a server to remove.</p>
+    <div class="pn-tools">
+      <div class="pn-search"><input type="text" id="rmSearch" placeholder="Search servers by name, cost or ID…" autocomplete="off" spellcheck="false"></div>
+      <select id="rmSort" class="pn-sort">
+        <option value="name-asc">Name (A–Z)</option>
+        <option value="name-desc">Name (Z–A)</option>
+        <option value="date-desc">Date created (newest)</option>
+        <option value="date-asc">Date created (oldest)</option>
+        <option value="price-asc">Price (low to high)</option>
+        <option value="price-desc">Price (high to low)</option>
+      </select>
+    </div>
+    <div class="pn-count" id="rmCount"></div>
+    <div id="removeServerList" style="display:flex; flex-direction:column; gap:10px;"></div>
+  </div>
+</div>
+
+<!-- Confirm-delete step, shown on top of the Remove Server modal -->
+<div class="modal-overlay" id="confirmDeleteOverlay">
+  <div class="modal-box" style="max-width:380px; text-align:center;">
+    <h1 class="heading" style="justify-content:center;">Remove this server?</h1>
+    <p class="subtext" id="confirmDeleteName" style="margin-bottom:24px;"></p>
+    <p class="subtext" style="margin-bottom:24px; color: var(--error);">This cannot be undone.</p>
+    <div style="display:flex; gap:12px;">
+      <button type="button" class="signout" id="confirmDeleteCancel" style="flex:1;">Cancel</button>
+      <button type="button" class="submit" id="confirmDeleteYes" style="flex:1; background: var(--error); color:#fff;">Yes, remove</button>
+    </div>
+  </div>
+</div>
+

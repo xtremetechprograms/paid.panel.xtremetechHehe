@@ -1,0 +1,33 @@
+<div class="manage-view" id="accountOverlay">
+  <h1 class="heading" style="text-align:left; justify-content:flex-start;">Settings</h1>
+  <div class="plg-status" id="acStatus"></div>
+  <div class="ac-top">
+    <div class="ac-dp" id="acDp"></div>
+    <div class="ac-meta"><b id="acName"></b><span id="acEmail"></span>
+      <div class="ac-row" style="margin-top:10px;">
+        <button type="button" class="plg-btn" id="acPhoto">Change photo</button>
+        <button type="button" class="plg-btn" id="acPhotoDel">Remove</button>
+      </div>
+    </div>
+    <input type="file" id="acFile" accept="image/*" hidden>
+  </div>
+  <div class="ac-grid">
+    <div class="ac-box"><h3>Username</h3>
+      <input type="text" id="acUser" maxlength="32" placeholder="Username" autocomplete="off">
+      <button type="button" class="plg-btn" id="acUserSave">Save username</button>
+    </div>
+    <div class="ac-box"><h3>Update Password</h3>
+      <input type="password" id="pwOld" placeholder="Old password" autocomplete="current-password">
+      <input type="password" id="pwNew" placeholder="New password" autocomplete="new-password">
+      <input type="password" id="pwNew2" placeholder="Confirm new password" autocomplete="new-password">
+      <button type="button" class="plg-btn" id="pwSave">Update password</button>
+    </div>
+    <div class="ac-box"><h3>Update Email</h3>
+      <input type="email" id="emEmail" placeholder="Current email" readonly>
+      <input type="password" id="emPass" placeholder="Password" autocomplete="current-password">
+      <input type="email" id="emNew" placeholder="New email" autocomplete="off">
+      <button type="button" class="plg-btn" id="emSave">Update email</button>
+    </div>
+  </div>
+</div>
+

@@ -1,0 +1,47 @@
+<div class="manage-view" id="advOverlay">
+  <h1 class="heading" style="text-align:left; justify-content:flex-start;">Advanced files startup</h1>
+  <p class="subtext" style="text-align:left; margin-bottom:16px;">Search runnable files (.py, .js, .ts, .sh or executable) and add one to this server's startup files.</p>
+  <div id="advStatus" class="plg-status"></div>
+
+  <div class="adv-card">
+    <div class="adv-search">
+      <input type="text" id="advInput" placeholder="example.py" autocomplete="off" autocapitalize="off" spellcheck="false">
+      <button type="button" class="adv-ibtn" id="advSearchBtn" title="Search">
+        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="11" cy="11" r="6.5" stroke="currentColor" stroke-width="1.8"/><path d="M16 16l4.5 4.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+      </button>
+    </div>
+    <div id="advResults"></div>
+  </div>
+
+  <h2 class="adv-h">Startup files</h2>
+  <div class="adv-card"><div id="advFiles"></div></div>
+
+  <h2 class="adv-h">Python libraries</h2>
+  <div class="adv-card">
+    <div class="adv-pip">
+      <span class="adv-cmd">python -m pip install</span>
+      <input type="text" id="pipInput" placeholder="requests flask" autocomplete="off" autocapitalize="off" spellcheck="false">
+      <button type="button" class="adv-ibtn ok" id="pipBtn">
+        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M5 12.5l4.5 4.5L19 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <span>Install</span>
+      </button>
+    </div>
+    <div id="pipStatus" class="plg-status" style="margin:10px 0 0;"></div>
+  </div>
+
+  <div id="shellWrap" style="display:none;">
+    <h2 class="adv-h">Command prompt</h2>
+    <div class="adv-card">
+      <div class="adv-pip">
+        <span class="adv-cmd">$</span>
+        <input type="text" id="shellInput" placeholder="ls -la" autocomplete="off" autocapitalize="off" spellcheck="false" maxlength="1000">
+        <button type="button" class="adv-ibtn ok" id="shellBtn">
+          <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M5 12.5l4.5 4.5L19 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <span>Run</span>
+        </button>
+      </div>
+      <div id="shellStatus" class="plg-status" style="margin:10px 0 0;"></div>
+    </div>
+  </div>
+</div>
+

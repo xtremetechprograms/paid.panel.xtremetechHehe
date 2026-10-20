@@ -1,0 +1,30 @@
+<div class="manage-view" id="mcBlankOverlay">
+  <h1 class="heading" style="text-align:left; justify-content:flex-start;" id="mcBlankTitle"></h1>
+  <div class="wd-grid" id="worldsGrid">
+    <div class="wd-box" data-dim="overworld" style="--bg:url('https://github.com/xtremetechprograms/IMAGES/blob/main/Overworld.jpeg?raw=true')"><span>Overworld</span></div>
+    <div class="wd-box" data-dim="nether" style="--bg:url('https://github.com/xtremetechprograms/IMAGES/blob/main/nether.png?raw=true')"><span>Nether</span></div>
+    <div class="wd-box" data-dim="end" style="--bg:url('https://github.com/xtremetechprograms/IMAGES/blob/main/end.png?raw=true')"><span>The End</span></div>
+  </div>
+  <div id="worldDetail" style="display:none;">
+    <button type="button" class="plg-btn" id="wdBack">← Back</button>
+    <h2 class="heading" id="wdTitle" style="font-size:20px; text-align:left; justify-content:flex-start; margin:14px 0 4px;"></h2>
+    <div class="plg-status" id="wdStatus"></div>
+    <div class="wd-opts">
+      <button type="button" class="wd-opt" data-opt="download"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v11M7.5 10.5L12 15l4.5-4.5M5 19.5h14"/></svg><span>Download</span></button>
+      <button type="button" class="wd-opt" data-opt="upload"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V4M7.5 8.5L12 4l4.5 4.5M5 19.5h14"/></svg><span>Upload</span></button>
+      <button type="button" class="wd-opt" data-opt="files"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 7.5A1.5 1.5 0 0 1 5 6h4l2 2.5h8A1.5 1.5 0 0 1 20.5 10v8A1.5 1.5 0 0 1 19 19.5H5A1.5 1.5 0 0 1 3.5 18z"/></svg><span>Files</span></button>
+      <button type="button" class="wd-opt" data-opt="generate"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12a8 8 0 1 1-2.6-5.9M20 4v4.5h-4.5"/></svg><span>Generate</span></button>
+    </div>
+    <div class="cfg-box" id="wdGen" style="display:none; margin-top:16px;">
+      <div class="cfg-title" id="wdGenTitle">Generate a new world</div>
+      <p class="mm-sub" id="wdGenHint"></p>
+      <div class="mm-bar" style="margin-bottom:0;">
+        <input type="text" id="wdSeed" placeholder="Seed (optional)" autocomplete="off" spellcheck="false">
+        <button type="button" class="plg-btn" id="wdGenGo">Generate</button>
+        <button type="button" class="plg-btn" id="wdGenCancel">Cancel</button>
+      </div>
+    </div>
+    <input type="file" id="wdFile" accept=".zip,.tar.gz,.tgz" hidden>
+  </div>
+</div>
+

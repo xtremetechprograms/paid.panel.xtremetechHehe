@@ -1,0 +1,98 @@
+<div class="manage-view" id="mcConfigOverlay">
+  <h1 class="heading" style="text-align:left; justify-content:flex-start;">Configurations</h1>
+  <div class="plg-status" id="cfgStatus"></div>
+  <div class="cfg-box cfg-head">
+    <label class="cfg-icon" id="cfgIcon" title="Change server logo">
+      <img id="cfgIconImg" alt="" hidden>
+      <span id="cfgIconPh"><svg width="26" height="26" viewBox="0 0 24 24" fill="none"><path d="M4 8h3l1.5-2h7L17 8h3v11H4V8z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><circle cx="12" cy="13" r="3.2" stroke="currentColor" stroke-width="1.8"/></svg></span>
+      <span class="cfg-icon-hover"><svg width="26" height="26" viewBox="0 0 24 24" fill="none"><path d="M4 8h3l1.5-2h7L17 8h3v11H4V8z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><circle cx="12" cy="13" r="3.2" stroke="currentColor" stroke-width="1.8"/></svg></span>
+      <input type="file" id="cfgIconFile" accept="image/*" hidden>
+    </label>
+    <div class="cfg-head-main">
+      <div class="cfg-label">Server IP</div>
+      <div class="cfg-ip-row"><span class="cfg-ip" id="cfgIp">—</span><button type="button" class="plg-btn" id="cfgCopy" style="padding:6px 12px; font-size:12px;">Copy</button></div>
+      <div class="cfg-label" style="margin-top:16px;">Description</div>
+      <div class="cfg-desc-row">
+        <div class="cfg-motd" id="cfgMotd"></div>
+        <button type="button" class="cfg-pencil" id="cfgEditMotd" aria-label="Edit description"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M4 20h4L19 9a2.1 2.1 0 0 0-3-3L5 17v3z M14 7l3 3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+      </div>
+    </div>
+  </div>
+  <div class="cfg-box">
+    <div class="cfg-title">Server Properties</div>
+    <div class="cfg-section">
+      <div class="cfg-section-title"><svg class="cfg-ico" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 3v2.5M12 18.5V21M3 12h2.5M18.5 12H21M5.6 5.6l1.8 1.8M16.6 16.6l1.8 1.8M5.6 18.4l1.8-1.8M16.6 7.4l1.8-1.8"/></svg>General</div>
+      <div class="cfg-grid">
+        <div class="cfg-field"><label class="cfg-label"><svg class="cfg-ico" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3"/><path d="M3 19c.5-3 2.8-5 6-5s5.5 2 6 5M16 5.5a3 3 0 0 1 0 5.5M18 14.5c1.8.6 3 2.2 3.4 4.5"/></svg>Slots</label><div class="cfg-input-wrap"><input type="number" id="cfgSlots" class="has-suffix" min="1" max="100000" step="1"><span class="cfg-suffix">members</span></div><div class="cfg-hint"><span id="cfgSlotsHint">Total members that can be online at once.</span></div></div>
+        <div class="cfg-field"><label class="cfg-label"><svg class="cfg-ico" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="8" width="18" height="10" rx="4"/><path d="M8 11v4M6 13h4M15.5 12h.01M18 14h.01"/></svg>Gamemode</label><select id="cfgGamemode"><option value="survival">Survival</option><option value="creative">Creative</option><option value="adventure">Adventure</option><option value="spectator">Spectator</option></select><div class="cfg-hint">Default mode for players joining.</div></div>
+        <div class="cfg-field"><label class="cfg-label"><svg class="cfg-ico" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a7 7 0 0 0-7 7c0 2.4 1.2 4 3 5v3h8v-3c1.8-1 3-2.6 3-5a7 7 0 0 0-7-7z"/><path d="M9.5 11h.01M14.5 11h.01"/></svg>Difficulty</label><select id="cfgDifficulty"><option value="peaceful">Peaceful</option><option value="easy">Easy</option><option value="normal">Normal</option><option value="hard">Hard</option></select><div class="cfg-hint">How tough mobs and hunger are.</div></div>
+      </div>
+    </div>
+    <div class="cfg-section boxed">
+      <div class="cfg-section-title"><svg class="cfg-ico" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7 3v5c0 4.5-3 8-7 10-4-2-7-5.5-7-10V6l7-3z"/></svg>Access &amp; Gameplay</div>
+      <div class="cfg-grid">
+        <div class="cfg-row"><div class="cfg-row-text"><div class="cfg-row-title"><svg class="cfg-ico" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6h11M9 12h11M9 18h11M4 6l1 1 2-2M4 12l1 1 2-2M4 18l1 1 2-2"/></svg>Whitelist</div><div class="cfg-row-hint">Only approved players can join.</div></div><div class="cfg-row-ctl"><button type="button" class="mc-switch" id="cfgWhitelist" role="switch" aria-checked="false"><span></span></button><span class="mc-switch-label">Off</span></div></div>
+        <div class="cfg-row"><div class="cfg-row-text"><div class="cfg-row-title"><svg class="cfg-ico" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 7.5-2"/></svg>Cracked</div><div class="cfg-row-hint">Allow offline (non-premium) accounts.</div></div><div class="cfg-row-ctl"><button type="button" class="mc-switch" id="cfgCracked" role="switch" aria-checked="false"><span></span></button><span class="mc-switch-label">Off</span></div></div>
+        <div class="cfg-row"><div class="cfg-row-text"><div class="cfg-row-title"><svg class="cfg-ico" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17c4 0 8-2 10-6 1-2 3-4 8-4-1 5-3 9-8 10-3 .6-6 .4-10 0z"/></svg>Fly</div><div class="cfg-row-hint">Allow flying without being kicked.</div></div><div class="cfg-row-ctl"><button type="button" class="mc-switch" id="cfgFly" role="switch" aria-checked="false"><span></span></button><span class="mc-switch-label">Off</span></div></div>
+        <div class="cfg-row"><div class="cfg-row-text"><div class="cfg-row-title"><svg class="cfg-ico" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>Force Gamemode</div><div class="cfg-row-hint">Reset players to the default gamemode on join.</div></div><div class="cfg-row-ctl"><button type="button" class="mc-switch" id="cfgForceGm" role="switch" aria-checked="false"><span></span></button><span class="mc-switch-label">Off</span></div></div>
+        <div class="cfg-field"><label class="cfg-label"><svg class="cfg-ico" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7 3v5c0 4.5-3 8-7 10-4-2-7-5.5-7-10V6l7-3z"/></svg>Spawn Protection</label><div class="cfg-input-wrap"><input type="number" id="cfgSpawn" class="has-suffix" min="0" max="10000" step="1"><span class="cfg-suffix">blocks</span></div><div class="cfg-hint">Radius around spawn only operators can edit.</div></div>
+      </div>
+    </div>
+    <div class="cfg-section boxed">
+      <div class="cfg-section-title"><svg class="cfg-ico" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8l9-5 9 5v8l-9 5-9-5V8z"/><path d="M3 8l9 5 9-5M12 13v8"/></svg>Resource Pack</div>
+      <div class="cfg-grid">
+        <div class="cfg-row"><div class="cfg-row-text"><div class="cfg-row-title"><svg class="cfg-ico" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>Resource Pack Required</div><div class="cfg-row-hint">Kick players who decline the pack.</div></div><div class="cfg-row-ctl"><button type="button" class="mc-switch" id="cfgReqPack" role="switch" aria-checked="false"><span></span></button><span class="mc-switch-label">Off</span></div></div>
+        <div class="cfg-field"><label class="cfg-label"><svg class="cfg-ico" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8l9-5 9 5v8l-9 5-9-5V8z"/><path d="M3 8l9 5 9-5M12 13v8"/></svg>Resource Pack</label><select id="cfgPackType"><option value="none">None</option><option value="link">Link</option></select><div class="cfg-hint">Where players download the pack from.</div></div>
+        <div class="cfg-field wide" id="cfgPackLinkWrap"><label class="cfg-label"><svg class="cfg-ico" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/></svg>Resource Pack Link</label><input type="text" id="cfgPackLink" placeholder="https://example.com/pack.zip" autocomplete="off" spellcheck="false"><div class="cfg-hint">Direct download URL of the .zip pack.</div></div>
+      </div>
+    </div>
+    <div class="cfg-section boxed">
+      <div class="cfg-section-title"><svg class="cfg-ico" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="6" width="12" height="12" rx="2"/><path d="M9 3v3M15 3v3M9 18v3M15 18v3M3 9h3M3 15h3M18 9h3M18 15h3"/></svg>System</div>
+      <div class="cfg-grid">
+        <div class="cfg-field"><label class="cfg-label"><svg class="cfg-ico" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>Timezone</label><input type="text" id="cfgTz" list="cfgTzList" placeholder="Asia/Calcutta" autocomplete="off" spellcheck="false"><datalist id="cfgTzList"></datalist><div class="cfg-hint">Clock used by the server and its logs.</div></div>
+        <div class="cfg-field"><label class="cfg-label"><svg class="cfg-ico" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="6" width="12" height="12" rx="2"/><path d="M9 3v3M15 3v3M9 18v3M15 18v3M3 9h3M3 15h3M18 9h3M18 15h3"/></svg>Environment</label><select id="cfgEnv"></select><div class="cfg-hint">Java version the server runs on.</div></div>
+      </div>
+    </div>
+    <div class="cfg-section boxed" id="viBox">
+      <div class="cfg-section-title">Version Installer</div>
+      <p class="mm-sub">Install a specific Minecraft version. This replaces the server jar, so stop the server first.</p>
+      <div class="plg-status" id="viStatus"></div>
+      <div class="vi-grid" id="viSoft">
+        <div class="vi-box" data-soft="vanilla">Vanilla<small>Official Mojang</small></div>
+        <div class="vi-box" data-soft="paper">Paper<small>Bukkit plugins</small></div>
+        <div class="vi-box" data-soft="folia">Folia<small>Paper, multithreaded</small></div>
+        <div class="vi-box" data-soft="purpur">Purpur<small>Paper fork</small></div>
+        <div class="vi-box" data-soft="fabric">Fabric<small>Mod loader</small></div>
+      </div>
+      <div id="viPick" style="display:none;">
+        <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+          <button type="button" class="plg-btn" id="viBack">← Back</button>
+          <span id="viTitle" style="font-size:15px;"></span>
+        </div>
+        <div class="mm-bar" style="margin:12px 0 0;"><input type="text" id="viSearch" placeholder="Search versions…" autocomplete="off"></div>
+        <div class="vi-vers" id="viVers"></div>
+      </div>
+    </div>
+  </div>
+  <div class="cfg-actions">
+    <button type="button" class="plg-btn" id="cfgSave">Save changes</button>
+    <span class="plg-status" style="margin:0;">Stop the server before saving, then start it to apply.</span>
+  </div>
+</div>
+
+<div class="modal-overlay" id="motdOverlay">
+  <div class="modal-box" style="max-width:540px; text-align:left;">
+    <button type="button" class="modal-close" id="motdClose">✕</button>
+    <h1 class="heading" style="justify-content:flex-start;">Edit Description</h1>
+    <p class="subtext" style="text-align:left; margin-bottom:0;">Use &amp; codes for colors and styles. Two lines max.</p>
+    <div class="motd-preview" id="motdPreview"></div>
+    <textarea id="motdInput" rows="2" maxlength="120" spellcheck="false"></textarea>
+    <div class="motd-swatches" id="motdSwatches"></div>
+    <div class="motd-fmts" id="motdFmts"></div>
+    <div style="display:flex; gap:10px; justify-content:flex-end; margin-top:18px;">
+      <button type="button" class="plg-btn" id="motdCancel">Cancel</button>
+      <button type="button" class="plg-btn" id="motdApply">Apply</button>
+    </div>
+  </div>
+</div>
+

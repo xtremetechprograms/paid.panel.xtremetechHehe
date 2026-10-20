@@ -1,0 +1,33 @@
+<div class="manage-view" id="scheduleOverlay">
+  <div style="display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap;">
+    <h1 class="heading" style="text-align:left; justify-content:flex-start; margin:0;">Schedule</h1>
+    <button type="button" class="plg-btn" id="schNew">+ New schedule</button>
+  </div>
+  <p class="subtext" style="text-align:left; margin:6px 0 16px;">Automatically restart your server on a timer.</p>
+  <div class="plg-status" id="schStatus"></div>
+  <div class="plg-list" id="schList"></div>
+</div>
+
+<div class="modal-overlay" id="schModal">
+  <div class="modal-box" style="max-width:540px; text-align:left; max-height:90vh; overflow-y:auto;">
+    <button type="button" class="modal-close" id="schClose">✕</button>
+    <h1 class="heading" style="justify-content:flex-start;" id="schTitle">New schedule</h1>
+    <div class="cfg-field" style="margin-top:14px;"><label class="cfg-label" for="schName">Name</label><input type="text" id="schName" maxlength="60" placeholder="Daily restart" autocomplete="off"></div>
+    <div class="cfg-field"><label class="cfg-label" for="schAction">Action</label><select id="schAction"><option value="restart">Restart</option><option value="stop">Stop</option><option value="start">Start</option></select></div>
+    <div class="cfg-field"><label class="cfg-label" for="schMode">Repeat</label><select id="schMode"><option value="hours">Every few hours</option><option value="daily">Every day</option><option value="weekly">On selected days</option><option value="custom">Custom cron</option></select></div>
+    <div class="cfg-field" id="schHoursWrap"><div class="sch-inline"><span class="cfg-hint" style="margin:0;">Every</span><select id="schEvery"><option>1</option><option>2</option><option>3</option><option>4</option><option>6</option><option>8</option><option>12</option></select><span class="cfg-hint" style="margin:0;">hours at minute</span><input type="number" id="schMinute" min="0" max="59" value="0" style="width:84px;"></div></div>
+    <div class="cfg-field" id="schTimeWrap"><label class="cfg-label" for="schTime">Time</label><input type="time" id="schTime" value="04:00"></div>
+    <div class="cfg-field" id="schDaysWrap"><label class="cfg-label">Days</label><div class="sch-days" id="schDays"></div></div>
+    <div class="cfg-field" id="schCustomWrap"><label class="cfg-label">Cron fields</label><div class="sch-custom"><div><small>Min</small><input type="text" id="schCMin" value="0"></div><div><small>Hour</small><input type="text" id="schCHour" value="4"></div><div><small>Day</small><input type="text" id="schCDom" value="*"></div><div><small>Month</small><input type="text" id="schCMon" value="*"></div><div><small>Weekday</small><input type="text" id="schCDow" value="*"></div></div></div>
+    <div class="cfg-row"><div class="cfg-row-text"><div class="cfg-row-title">Warn players</div><div class="cfg-row-hint">Sends a chat warning 1 minute before.</div></div><div class="cfg-row-ctl"><button type="button" class="mc-switch" id="schWarn" role="switch" aria-checked="false"><span></span></button><span class="mc-switch-label">Off</span></div></div>
+    <div class="cfg-row"><div class="cfg-row-text"><div class="cfg-row-title">Only when server is online</div><div class="cfg-row-hint">Skip the run if the server is offline.</div></div><div class="cfg-row-ctl"><button type="button" class="mc-switch" id="schOnline" role="switch" aria-checked="false"><span></span></button><span class="mc-switch-label">Off</span></div></div>
+    <div class="cfg-row"><div class="cfg-row-text"><div class="cfg-row-title">Active</div><div class="cfg-row-hint">Turn off to pause this schedule.</div></div><div class="cfg-row-ctl"><button type="button" class="mc-switch" id="schActive" role="switch" aria-checked="false"><span></span></button><span class="mc-switch-label">Off</span></div></div>
+    <div class="plg-status" id="schError" style="margin-top:6px;"></div>
+    <p class="cfg-hint" style="margin:0 0 4px;">Times follow the panel's timezone.</p>
+    <div style="display:flex; gap:10px; justify-content:flex-end; margin-top:14px;">
+      <button type="button" class="plg-btn" id="schCancel">Cancel</button>
+      <button type="button" class="plg-btn" id="schSave">Save</button>
+    </div>
+  </div>
+</div>
+

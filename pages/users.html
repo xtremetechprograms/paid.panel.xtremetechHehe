@@ -1,0 +1,69 @@
+<!-- Server Users section: shown in place of the box list when a server is clicked -->
+<div class="manage-view" id="serverUsersOverlay">
+  <button type="button" id="serverUsersBack" title="Back to server list" style="width:auto; height:auto; padding:8px 14px; margin-bottom:16px; background:transparent; border:1px solid var(--panel-border); border-radius:10px; color:var(--text-muted); font-family:var(--mono); font-size:13px; cursor:pointer;">← Back</button>
+
+  <h1 class="heading" style="text-align:left; justify-content:flex-start;" id="serverUsersName"></h1>
+  <p class="subtext" style="text-align:left; margin-bottom:16px;">Users with access to this server.</p>
+
+  <div id="serverUsersList" style="display:flex; flex-direction:column; gap:10px; margin-bottom:28px;"></div>
+
+  <h1 class="heading" id="addUserHeading" style="text-align:left; justify-content:flex-start; font-size:16px;">Add User</h1>
+  <p class="subtext" style="text-align:left; margin-bottom:16px;">Creates a real login for them (or updates their password if the email already has one) and limits what they'll be able to use.</p>
+
+  <div id="addUserError" class="error-msg"></div>
+
+  <div class="field">
+    <label for="addUserEmail">Email</label>
+    <input type="email" id="addUserEmail" placeholder="someone@example.com">
+  </div>
+
+  <div class="field" style="margin-top:18px;">
+    <label for="addUserPassword">Password</label>
+    <div class="pw-wrap">
+      <input type="password" id="addUserPassword" placeholder="Leave blank to keep the existing password">
+      <button type="button" class="pw-toggle" id="addUserPwToggle">show</button>
+    </div>
+  </div>
+
+  <div class="field" style="margin-top:18px;">
+    <label for="addUserPasswordConfirm">Confirm Password</label>
+    <div class="pw-wrap">
+      <input type="password" id="addUserPasswordConfirm" placeholder="Re-type the password above">
+      <button type="button" class="pw-toggle" id="addUserPwConfirmToggle">show</button>
+    </div>
+  </div>
+
+  <div class="duration-row" style="margin-top:18px;">
+    <div class="field">
+      <label for="addUserCpuLimit">CPU Limit (%)</label>
+      <input type="number" id="addUserCpuLimit" placeholder="e.g. 50" min="0">
+    </div>
+    <div class="field">
+      <label for="addUserRamLimit">RAM Limit (MB)</label>
+      <input type="number" id="addUserRamLimit" placeholder="e.g. 1024" min="0">
+    </div>
+    <div class="field">
+      <label for="addUserStorageLimit">Storage Limit (MB)</label>
+      <input type="number" id="addUserStorageLimit" placeholder="e.g. 5000" min="0">
+    </div>
+    <div class="field">
+      <label for="addUserNetworkLimit">Network Limit (Mbps)</label>
+      <input type="number" id="addUserNetworkLimit" placeholder="e.g. 100" min="0">
+    </div>
+  </div>
+
+  <label style="display:flex;align-items:center;gap:8px;margin-top:14px;font-size:13px;">
+    <input type="checkbox" id="addUserFullAccess"> Give access to the whole server (all files)
+  </label>
+
+  <p class="subtext" style="margin-top:14px; font-size:12px;">
+    CPU and RAM limits are applied for real on the panel. A private folder named after their email is
+    created in Files, and they'll only ever see that folder. Storage/network are shown as caps in the
+    dashboard, but XtremeTech has no native network-throttle to enforce.
+  </p>
+
+  <button type="button" class="submit" id="addUserSaveBtn" style="margin-top:20px;">
+    <span>Add User</span>
+  </button>
+</div>
+

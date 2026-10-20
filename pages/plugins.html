@@ -1,0 +1,34 @@
+<div class="manage-view" id="pluginsOverlay">
+  <h1 class="heading" style="text-align:left; justify-content:flex-start;">Plugins</h1>
+  <p class="subtext" style="text-align:left; margin-bottom:16px;">Browse and install from Modrinth.</p>
+  <div class="plg-bar">
+    <input type="text" id="plgQuery" placeholder="Search plugins…" autocomplete="off">
+    <select id="plgLoader">
+      <option value="paper">Paper</option>
+      <option value="spigot">Spigot</option>
+      <option value="bukkit">Bukkit</option>
+      <option value="purpur">Purpur</option>
+      <option value="folia">Folia</option>
+      <option value="fabric">Fabric</option>
+      <option value="forge">Forge</option>
+      <option value="neoforge">NeoForge</option>
+      <option value="quilt">Quilt</option>
+    </select>
+    <select id="plgVersion"><option value="">Any version</option></select>
+    <select id="plgSort">
+      <option value="relevance">Relevance</option>
+      <option value="downloads">Downloads</option>
+      <option value="follows">Follows</option>
+      <option value="newest">Newest</option>
+      <option value="updated">Updated</option>
+    </select>
+  </div>
+  <div class="plg-status" id="plgStatus"></div>
+  <div class="plg-list" id="plgList"></div>
+  <div class="plg-pager">
+    <button type="button" class="plg-btn" id="plgPrev">← Prev</button>
+    <span class="plg-status" id="plgPage" style="margin:0;"></span>
+    <button type="button" class="plg-btn" id="plgNext">Next →</button>
+  </div>
+</div>
+

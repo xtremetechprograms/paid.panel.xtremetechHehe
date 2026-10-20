@@ -1,0 +1,61 @@
+<div class="modal-overlay" id="confirmRemoveUserOverlay">
+  <div class="modal-box" style="max-width:380px; text-align:center;">
+    <h1 class="heading" style="justify-content:center;">Remove this user?</h1>
+    <p class="subtext" id="confirmRemoveUserName" style="margin-bottom:24px;"></p>
+    <p class="subtext" style="margin-bottom:24px; color: var(--error);">Removes their access to this server. Their login itself isn't deleted (they may have access to other servers). This cannot be undone.</p>
+    <div style="display:flex; gap:12px;">
+      <button type="button" class="signout" id="confirmRemoveUserCancel" style="flex:1;">Cancel</button>
+      <button type="button" class="submit" id="confirmRemoveUserYes" style="flex:1; background: var(--error); color:#fff;">Yes, remove</button>
+    </div>
+  </div>
+</div>
+
+<!-- Manage Servers section: click a server to manage its users -->
+<div class="manage-view" id="manageServersOverlay">
+  <h1 class="heading" style="text-align:left; justify-content:flex-start;">Manage Servers</h1>
+  <p class="subtext" style="text-align:left; margin-bottom:16px;">Click a server to see and manage its users.</p>
+
+  <h2 class="adv-h">Backend link</h2>
+  <div class="adv-search" style="margin-bottom:8px;">
+    <input type="text" id="backendUrlInput" placeholder="https://your-backend-link" autocomplete="off" autocapitalize="off" spellcheck="false">
+    <button type="button" class="adv-ibtn ok" id="backendUrlBtn"><span>Save</span></button>
+  </div>
+  <div class="plg-status" id="backendUrlStatus" style="margin:0 0 18px;"></div>
+
+  <button type="button" class="adv-ibtn ok" id="adminMailBtn" style="width:auto;padding:0 16px;margin-bottom:18px;"><span>✉ Send email</span></button>
+
+  <div class="adv-search" style="margin-bottom:16px;">
+    <input type="text" id="manageSearch" placeholder="Search servers…" autocomplete="off" spellcheck="false">
+    <button type="button" class="adv-ibtn" id="manageSearchBtn" title="Search">
+      <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="11" cy="11" r="6.5" stroke="currentColor" stroke-width="1.8"/><path d="M16 16l4.5 4.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+    </button>
+  </div>
+
+  <div id="manageServersBoxes" style="display:flex; flex-direction:column; gap:14px;"></div>
+</div>
+
+<div class="modal-overlay" id="srvInfoOverlay">
+  <div class="modal-box" style="max-width:440px;">
+    <button type="button" class="modal-close" id="srvInfoClose">✕</button>
+    <h1 class="heading" style="text-align:left; justify-content:flex-start;" id="srvInfoTitle">Info</h1>
+    <div id="srvInfoBody" style="display:flex; flex-direction:column; gap:8px; margin-top:16px;"></div>
+  </div>
+</div>
+
+
+<div class="modal-overlay" id="adminMailOverlay">
+  <div class="modal-box" style="max-width:460px;">
+    <button type="button" class="modal-close" id="mailClose">✕</button>
+    <h1 class="heading" style="text-align:left; justify-content:flex-start;">Send email</h1>
+    <input type="hidden" id="mailServer">
+    <div class="field" style="margin-top:14px;"><label for="mailTo">To</label><input type="email" id="mailTo" placeholder="someone@example.com" autocomplete="off"></div>
+    <div class="field" style="margin-top:12px;"><label for="mailSubject">Subject</label><input type="text" id="mailSubject" placeholder="Optional" autocomplete="off"></div>
+    <div class="field" style="margin-top:12px;"><label for="mailMessage">Message</label><textarea id="mailMessage" rows="4" placeholder="Leave blank to send an automatic message" style="width:100%;resize:vertical;"></textarea></div>
+    <div class="duration-row" style="margin-top:12px;">
+      <div class="field"><label for="mailBtnLabel">Button text</label><input type="text" id="mailBtnLabel" autocomplete="off"></div>
+      <div class="field"><label for="mailBtnUrl">Button link</label><input type="text" id="mailBtnUrl" autocomplete="off" spellcheck="false"></div>
+    </div>
+    <div class="plg-status" id="mailStatus" style="margin:12px 0 0;"></div>
+    <button type="button" class="submit" id="mailSend" style="margin-top:16px;"><span>Send</span></button>
+  </div>
+</div>

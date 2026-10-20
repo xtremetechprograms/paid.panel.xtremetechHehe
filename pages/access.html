@@ -1,0 +1,36 @@
+<div class="manage-view" id="accessOverlay">
+  <h1 class="heading" style="text-align:left; justify-content:flex-start;">Members</h1>
+  <p class="subtext" style="text-align:left; margin-bottom:16px;">Give someone a login to this server and choose what they can do.</p>
+  <div class="plg-status" id="accStatus"></div>
+  <div id="mbMain">
+    <div class="mb-top">
+      <p class="mm-sub" style="margin:0;">Members with access</p>
+      <div class="mb-stats" id="mbStats"></div>
+    </div>
+    <div class="pn-tools">
+      <div class="pn-search"><input type="text" id="mbSearch" placeholder="Search by name, user ID, email or tag…" autocomplete="off" spellcheck="false"></div>
+      <button type="button" class="plg-btn" id="mbSearchBtn">Search</button>
+    </div>
+    <div class="mb-head"><span></span><span>Name</span><span>User ID</span><span>Date Added</span><span>Tag</span></div>
+    <div class="mb-list" id="accList" style="margin-bottom:26px;"></div>
+  </div>
+  <div id="mbDetail" style="display:none;"></div>
+  <p class="mm-sub" id="accFormTitle">Add member</p>
+  <div class="field"><label for="accEmail">Email</label><input type="email" id="accEmail" placeholder="someone@example.com" autocomplete="off"></div>
+  <div class="field" style="margin-top:14px;"><label for="accPass">Password</label><input type="password" id="accPass" placeholder="Leave blank to keep the existing password" autocomplete="new-password"></div>
+  <div id="accSpecs" style="display:none;">
+    <label class="mm-card" style="margin:14px 0 0; cursor:pointer;"><div class="mm-name">Whole server access<small>Off gives a private folder with the limits below</small></div><button type="button" class="mm-sw" id="accFull" aria-label="Whole server access"></button></label>
+    <div id="accLimits" class="acc-perms">
+      <div class="field"><label for="accCpu">CPU limit (%)</label><input type="number" id="accCpu" min="0" placeholder="e.g. 50"></div>
+      <div class="field"><label for="accRam">RAM limit (MB)</label><input type="number" id="accRam" min="0" placeholder="e.g. 1024"></div>
+      <div class="field"><label for="accDisk">Storage limit (MB)</label><input type="number" id="accDisk" min="0" placeholder="e.g. 5000"></div>
+    </div>
+    </div>
+    <div class="field" style="margin-top:14px;"><label for="accExpiry">Expires (optional)</label><input type="date" id="accExpiry"></div>
+    <div class="acc-perms" id="accPerms"></div>
+  <div style="display:flex; gap:10px;">
+    <button type="button" class="plg-btn" id="accSave">Save member</button>
+    <button type="button" class="plg-btn" id="accReset">Clear</button>
+  </div>
+</div>
+

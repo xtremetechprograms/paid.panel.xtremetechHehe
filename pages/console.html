@@ -1,0 +1,55 @@
+<!-- Confirm-remove-user step, shown on top of Manage Servers -->
+<div class="manage-view" id="serverControlOverlay">
+  <h1 class="heading sc-head" style="text-align:left; justify-content:flex-start;"><span id="serverControlName"></span><span class="sc-meta" id="scMeta"></span></h1>
+  <div id="serverState" data-state="offline" style="margin-top:4px; font-weight:600; font-size:13px; color:#f87171;">● Offline</div>
+  <div class="ctl-split" style="display:flex; gap:14px; margin-top:14px; padding-right:24px; align-items:stretch; height:400px;">
+    <div class="ctl-term" style="flex:0 0 62%; display:flex; flex-direction:column; gap:8px;">
+      <div style="background:#0a0b0d; border:1px solid var(--panel-border); border-radius:10px; padding:14px; font-family:var(--mono); font-size:12.5px; color:#ffffff; flex:1; min-height:0; overflow-y:auto; white-space:pre-wrap;" id="terminalOutput"></div>
+      <input type="text" id="terminalInput" placeholder="Type a command…" style="background:#0a0b0d; border:1px solid var(--panel-border); border-radius:10px; padding:10px 12px; font-family:var(--mono); font-size:12.5px; color:var(--text); outline:none;">
+    </div>
+
+    <div class="ctl-side" style="flex:1; display:flex; flex-direction:column; gap:10px;">
+      <div class="ctl-pwr" style="display:flex; gap:10px;">
+        <button type="button" id="pwrStart" style="flex:1; height:50px; border-radius:25px; border:2px solid rgba(255,255,255,0.3); background:var(--success); color:#0a1a12; display:flex; align-items:center; justify-content:center; cursor:pointer;">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+        </button>
+        <button type="button" id="pwrRestart" style="flex:1; height:50px; border-radius:25px; border:2px solid rgba(255,255,255,0.3); background:transparent; color:var(--text); display:flex; align-items:center; justify-content:center; cursor:pointer;">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none"><path d="M4 12a8 8 0 1 1 3 6.2M4 12V6M4 12h6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+        <button type="button" id="pwrStop" style="flex:1; height:50px; border-radius:25px; border:2px solid rgba(255,255,255,0.3); background:var(--error); color:#fff; display:flex; align-items:center; justify-content:center; cursor:pointer;">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><rect x="5" y="5" width="14" height="14" rx="2"/></svg>
+        </button>
+      </div>
+
+      <div class="info-box"><span>Address</span><span id="infoAddress">—</span></div>
+      <div class="info-box"><span>Uptime</span><span id="infoUptime">—</span></div>
+      <div class="info-box"><span>CPU Load</span><span id="infoCpu">—</span></div>
+      <div class="info-box"><span>Memory</span><span id="infoMemory">—</span></div>
+      <div class="info-box"><span>Disk</span><span id="infoDisk">—</span></div>
+      <div class="info-box"><span>Network (In)</span><span id="infoNetIn">—</span></div>
+      <div class="info-box"><span>Network (Out)</span><span id="infoNetOut">—</span></div>
+    </div>
+  </div>
+
+  <div class="ctl-graphs" style="display:flex; gap:8px; margin-top:10px;">
+    <div class="graph-box"><span>CPU Load</span>
+      <div class="graph-box-row">
+        <div class="graph-scale"><span id="scaleCpuUp">0</span><span id="scaleCpuMid">0</span><span>0%</span></div>
+        <canvas id="graphCpu" width="300" height="120"></canvas>
+      </div>
+    </div>
+    <div class="graph-box"><span>Memory</span>
+      <div class="graph-box-row">
+        <div class="graph-scale"><span id="scaleMemUp">0</span><span id="scaleMemMid">0</span><span>0</span></div>
+        <canvas id="graphMemory" width="300" height="120"></canvas>
+      </div>
+    </div>
+    <div class="graph-box"><span>Network</span>
+      <div class="graph-box-row">
+        <div class="graph-scale"><span id="scaleNetUp">0</span><span id="scaleNetMid">0</span><span>0</span></div>
+        <canvas id="graphNetwork" width="300" height="120"></canvas>
+      </div>
+    </div>
+  </div>
+</div>
+

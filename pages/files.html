@@ -1,0 +1,71 @@
+<!-- Files section: browse, upload, and edit a server's files -->
+<div class="manage-view" id="filesOverlay">
+  <div class="fm-topbar">
+    <div class="fm-path" id="fmPath"></div>
+    <div class="fm-actions">
+      <button type="button" class="fm-btn" id="fmCreateDirBtn">
+        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M3 7a1.5 1.5 0 0 1 1.5-1.5H9l2 2h8.5A1.5 1.5 0 0 1 21 9v9a1.5 1.5 0 0 1-1.5 1.5h-15A1.5 1.5 0 0 1 3 18V7z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M12 11v5M9.5 13.5h5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+        <span>Create Directory</span>
+      </button>
+      <button type="button" class="fm-btn" id="fmUploadBtn">
+        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 16V4M12 4l-4 4M12 4l4 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M4 15v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+        <span>Upload</span>
+      </button>
+      <div id="fmUploadProgress" style="display:none; position:relative; width:34px; height:34px;">
+        <svg viewBox="0 0 36 36" width="34" height="34">
+          <circle cx="18" cy="18" r="15.5" fill="none" stroke="rgba(255,255,255,0.12)" stroke-width="3"></circle>
+          <circle id="fmUploadProgressRing" cx="18" cy="18" r="15.5" fill="none" stroke="var(--success)" stroke-width="3" stroke-linecap="round" stroke-dasharray="97.4" stroke-dashoffset="97.4" transform="rotate(-90 18 18)"></circle>
+        </svg>
+        <span id="fmUploadProgressLabel" style="position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-size:9px; font-family:var(--mono); color:var(--text);">0%</span>
+      </div>
+      <button type="button" class="fm-btn" id="fmNewFileBtn">
+        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M6 3.5h8l4 4V19.5a1.5 1.5 0 0 1-1.5 1.5h-11A1.5 1.5 0 0 1 4 19.5v-14A1.5 1.5 0 0 1 5.5 3.5H6z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M12 11v5M9.5 13.5h5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+        <span>New File</span>
+      </button>
+      <button type="button" class="fm-btn" id="fmDownloadAllBtn">
+        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 4v12M12 16l-4-4M12 16l4-4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M4 15v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+        <img class="fm-spin" src="https://media4.giphy.com/media/v1.Y2lkPWVjZjA1ZTQ3cmZveGs0ZTBzaTh5NzV2YnV3N21vOTI4ajV4bzRqZGw0dmd6b29hMyZlcD12MV9zdGlja2Vyc19zZWFyY2gmY3Q9cw/9ItQ65rxiTpkceJ66B/giphy.webp" alt="" decoding="async">
+        <span>Download All</span>
+      </button>
+      <input type="file" id="fmFileInput" multiple style="display:none;">
+    </div>
+  </div>
+
+  <div class="fm-header-row">
+    <button type="button" class="fm-checkbox" id="fmSelectAll"></button>
+    <span style="flex:1;">Name</span>
+    <span style="width:70px; text-align:right;">Size</span>
+    <span style="width:150px; text-align:right;">Modified</span>
+    <span style="width:30px;"></span>
+  </div>
+
+  <div class="fm-list" id="fmList">
+    <div class="fm-drop-hint">Drop files here to upload</div>
+  </div>
+</div>
+
+<!-- File editor modal -->
+<div class="fm-editor-overlay" id="fmEditorOverlay">
+  <div class="fm-editor-box">
+    <div class="fm-editor-head">
+      <span id="fmEditorName">untitled.txt</span>
+      <button type="button" class="fm-editor-close" id="fmEditorClose">&times;</button>
+    </div>
+    <div class="fm-editor-code-wrap">
+      <pre class="fm-editor-gutter" id="fmEditorGutter">1</pre>
+      <pre class="fm-editor-highlight" id="fmEditorHighlight"></pre>
+      <textarea class="fm-editor-textarea" id="fmEditorTextarea" spellcheck="false"></textarea>
+    </div>
+    <div class="fm-editor-footer">
+      <div class="fm-lang-wrap">
+        <button type="button" class="fm-lang-btn" id="fmLangBtn">
+          <span id="fmLangLabel">Plain Text</span>
+          <svg viewBox="0 0 24 24" width="12" height="12" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+        <div class="fm-lang-menu" id="fmLangMenu"></div>
+      </div>
+      <button type="button" class="fm-save-btn" id="fmSaveBtn">Save</button>
+    </div>
+  </div>
+</div>
+

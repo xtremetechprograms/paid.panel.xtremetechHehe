@@ -1,0 +1,19 @@
+<div class="manage-view" id="panelsOverlay">
+  <h1 class="heading" style="text-align:left; justify-content:flex-start;">Manage Server Panels</h1>
+  <p class="subtext" style="text-align:left; margin-bottom:18px;">Pick the panel you are working with. The server list, Add Server, Remove Server and every server control follow your choice.</p>
+  <div class="pn-form" style="max-width:none;">
+    <div class="pn-top">
+      <div class="field" style="min-width:260px; flex:0 0 280px;">
+        <label for="panelSelect">Server Panel</label>
+        <select id="panelSelect">
+          <option value="pterodactyl">Pterodactyl</option>
+          <option value="feather">Feather Panel</option>
+        </select>
+      </div>
+      <div class="pn-status" id="panelStatus"><span class="pn-dot"></span><span id="panelStatusText">Checking…</span></div>
+    </div>
+    <p class="mm-sub" style="margin-top:26px;">Visibility</p>
+    <div class="pn-count" id="panelCount"></div>
+    <div class="pn-vis" id="panelServers"></div>
+  </div>
+</div>
