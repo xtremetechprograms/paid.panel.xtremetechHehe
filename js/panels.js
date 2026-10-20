@@ -356,6 +356,15 @@
   $('mbAdd').addEventListener('click', () => { if(window.xtAccReset) window.xtAccReset(); window.xtShowAddMember(true); });
   $('amBack').addEventListener('click', () => { if(window.xtAccReset) window.xtAccReset(); window.xtShowAddMember(false); });
 
+  const views = [...document.querySelectorAll('.manage-view')];
+  new MutationObserver(recs => {
+    let win = null;
+    recs.forEach(r => { const t = r.target; if(t.classList.contains('show') && !(r.oldValue || '').split(/\s+/).includes('show')) win = t; });
+    if(win) views.forEach(v => { if(v !== win) v.classList.remove('show'); });
+  }).observe(document.getElementById('pages'), { attributes:true, attributeFilter:['class'], attributeOldValue:true, subtree:true });
+  const shown = views.filter(v => v.classList.contains('show'));
+  shown.slice(0, -1).forEach(v => v.classList.remove('show'));
+
   fillLocations();
   $('panelSelect').value = cur;
   paintAddLabels();
