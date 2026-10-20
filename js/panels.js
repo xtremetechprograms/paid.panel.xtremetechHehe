@@ -241,6 +241,114 @@
     }
   };
 
+
+  const syncHome = () => document.body.classList.toggle('in-server', $('navTerminal').style.display !== 'none');
+  new MutationObserver(syncHome).observe($('navTerminal'), { attributes:true, attributeFilter:['style'] });
+  syncHome();
+
+  const CRED_REF = () => db.collection('config').doc('panelCredentials');
+  const CRED_FIELDS = {
+    pterodactyl: [['base_url','Panel URL','text'],['client_api_key','Client API key (ptlc_…)','password'],['application_api_key','Application API key (ptla_…)','password']],
+    feather: [['base_url','Panel URL','text'],['api_key','Private key','password'],['public_key','Public key','text'],['auth_header','Auth header (default: Authorization)','text'],['auth_format','Auth format (default: Bearer {private})','text']]
+  };
+  const JSON_MAP = {
+    pterodactyl: { panel_base_url:'base_url', client_api_key:'client_api_key', application_api_key:'application_api_key', base_url:'base_url' },
+    feather: { feather_base_url:'base_url', feather_api_key:'api_key', feather_public_key:'public_key', feather_auth_header:'auth_header', feather_auth_format:'auth_format', base_url:'base_url', api_key:'api_key', public_key:'public_key', auth_header:'auth_header', auth_format:'auth_format' }
+  };
+  const SECRET = new Set(['client_api_key','application_api_key','api_key','github_pat']);
+  const mask = (k, v) => !v ? '—' : SECRET.has(k) ? '••••••••' + String(v).slice(-4) : v;
+  let credDoc = null, credEdit = false, credErr = '';
+
+  async function loadCreds(){
+    credErr = '';
+    try{ const s = await CRED_REF().get(); credDoc = s.exists ? s.data() : {}; }
+    catch(e){ credDoc = null; credErr = /permission/i.test(e.message) ? 'Firestore rules are blocking access to config/panelCredentials. Add the admin rule, then reload.' : e.message; }
+    drawCreds();
+  }
+
+  function drawCreds(){
+    const box = $('credView'), p = $('credSelect').value, fields = CRED_FIELDS[p];
+    box.replaceChildren();
+    if(credErr){ box.innerHTML = `<div class="cr-box"><p class="cr-err">${esc(credErr)}</p></div>`; return; }
+    if(!credDoc){ box.innerHTML = '<div class="cr-box"><p class="subtext">Loading…</p></div>'; return; }
+    const cur = credDoc[p] || {}, has = fields.some(([k]) => cur[k]);
+    if(has && !credEdit){
+      const rows = [...fields.map(([k, l]) => [l, mask(k, cur[k])]), ['GitHub PAT (shared)', mask('github_pat', credDoc.github_pat)]];
+      box.innerHTML = `<div class="cr-box"><div class="cr-title">${esc(PNAME[p])} credentials</div>${rows.map(([l, v]) => `<div class="cr-row"><span>${esc(l)}</span><b>${esc(v)}</b></div>`).join('')}<div class="cr-actions"><button type="button" class="plg-btn" id="crChange">Change Credentials</button><button type="button" class="plg-btn danger" id="crDelete">Delete Credentials</button>${credDoc.github_pat ? '<button type="button" class="plg-btn danger" id="crDelPat">Remove GitHub PAT</button>' : ''}</div></div>`;
+      $('crChange').onclick = () => { credEdit = true; drawCreds(); };
+      $('crDelete').onclick = () => confirmFlow(`Delete ${PNAME[p]} credentials`, fields.map(([k, l]) => [l, mask(k, cur[k]) + '  →  removed']), () => CRED_REF().set({ [p]: firebase.firestore.FieldValue.delete() }, { merge:true }));
+      const dp = $('crDelPat');
+      if(dp) dp.onclick = () => confirmFlow('Remove GitHub PAT', [['GitHub PAT (shared)', mask('github_pat', credDoc.github_pat) + '  →  removed']], () => CRED_REF().set({ github_pat: firebase.firestore.FieldValue.delete() }, { merge:true }));
+      return;
+    }
+    box.innerHTML = `<div class="cr-box"><div class="cr-title">${esc(PNAME[p])} credentials</div>${fields.map(([k, l, t]) => `<div class="field" style="margin-top:12px;"><label for="cr_${k}">${esc(l)}</label><input type="${t}" id="cr_${k}" autocomplete="off" spellcheck="false" value="${esc(cur[k] || '')}"></div>`).join('')}<div class="field" style="margin-top:12px;"><label for="cr_github_pat">GitHub PAT <span class="mb-priv">Shared by both panels</span></label><input type="password" id="cr_github_pat" autocomplete="off" spellcheck="false" value="${esc(credDoc.github_pat || '')}"></div><div id="crJsonBox" style="display:none; margin-top:12px;"><textarea id="crJson" class="mb-ta" spellcheck="false" placeholder='{"${p === 'feather' ? 'feather_base_url' : 'panel_base_url'}": "...", "github_pat": "..."}'></textarea><div class="cr-actions"><button type="button" class="plg-btn" id="crJsonApply">Apply JSON</button></div></div><div class="plg-status" id="crMsg"></div><div class="cr-actions"><button type="button" class="plg-btn" id="crSave">Save</button><button type="button" class="plg-btn" id="crJsonToggle">Import JSON</button>${has ? '<button type="button" class="plg-btn" id="crCancel">Cancel</button>' : ''}</div></div>`;
+    const msg = (m, err) => { $('crMsg').textContent = m || ''; $('crMsg').classList.toggle('err', !!err); };
+    $('crJsonToggle').onclick = () => { const b = $('crJsonBox'); b.style.display = b.style.display === 'none' ? '' : 'none'; };
+    $('crJsonApply').onclick = () => {
+      let o; try{ o = JSON.parse($('crJson').value); }catch(e){ msg('That is not valid JSON.', true); return; }
+      if(!o || typeof o !== 'object' || Array.isArray(o)){ msg('JSON must be an object.', true); return; }
+      let n = 0;
+      Object.entries(o).forEach(([k, v]) => { const f = k === 'github_pat' ? 'github_pat' : JSON_MAP[p][k]; const el = f && $('cr_' + f); if(el && typeof v === 'string'){ el.value = v; n++; } });
+      msg(n ? `Filled ${n} field${n === 1 ? '' : 's'} from JSON.` : 'No matching keys found for this configuration.', !n);
+    };
+    if($('crCancel')) $('crCancel').onclick = () => { credEdit = false; drawCreds(); };
+    $('crSave').onclick = () => {
+      const next = {};
+      fields.forEach(([k]) => { next[k] = $('cr_' + k).value.trim(); });
+      const pat = $('cr_github_pat').value.trim();
+      const rows = [];
+      fields.forEach(([k, l]) => { if((cur[k] || '') !== next[k]) rows.push([l, `${mask(k, cur[k])}  →  ${mask(k, next[k])}`]); });
+      if((credDoc.github_pat || '') !== pat) rows.push(['GitHub PAT (shared)', `${mask('github_pat', credDoc.github_pat)}  →  ${mask('github_pat', pat)}`]);
+      if(!rows.length){ msg('No changes to save.', true); return; }
+      if(next.base_url && !/^(https?:\/\/)?[^\s/]+\.[^\s]+$/i.test(next.base_url)){ msg('Panel URL looks invalid.', true); return; }
+      const upd = { [p]: Object.fromEntries(Object.entries(next).filter(([, v]) => v)) };
+      if(pat) upd.github_pat = pat;
+      confirmFlow(`Update ${PNAME[p]} credentials`, rows, () => CRED_REF().set(upd, { merge:true }));
+    };
+  }
+
+  function dialog(html){
+    let o = $('credDialog');
+    if(!o){ o = document.createElement('div'); o.className = 'modal-overlay'; o.id = 'credDialog'; document.body.appendChild(o); }
+    o.innerHTML = `<div class="modal-box" style="max-width:440px; text-align:center;">${html}</div>`;
+    o.classList.add('show');
+    return o;
+  }
+  const closeDialog = () => { const o = $('credDialog'); if(o) o.classList.remove('show'); };
+
+  function confirmFlow(title, rows, commit){
+    const o = dialog(`<h1 class="heading" style="justify-content:center; font-size:18px;">${esc(title)}</h1><div class="cr-list">${rows.map(([l, v]) => `<div class="cr-row"><span>${esc(l)}</span><b>${esc(v)}</b></div>`).join('')}</div><p class="subtext" style="margin:16px 0;">Do you want to make these changes?</p><div style="display:flex; gap:12px;"><button type="button" class="signout" id="cdNo" style="flex:1;">No</button><button type="button" class="submit" id="cdYes" style="flex:1;">Yes</button></div>`);
+    $('cdNo').onclick = closeDialog;
+    $('cdYes').onclick = () => {
+      let left = 5, dead = false;
+      dialog(`<div class="cr-spin"></div><h1 class="heading" style="justify-content:center; font-size:18px;">Processing…</h1><p class="subtext" id="cdLeft" style="margin:8px 0 18px;">Applying in ${left}s</p><button type="button" class="signout" id="cdCancel" style="width:100%;">Cancel</button>`);
+      const tick = setInterval(async () => {
+        if(dead) return;
+        left--;
+        const el = $('cdLeft');
+        if(left > 0){ if(el) el.textContent = `Applying in ${left}s`; return; }
+        clearInterval(tick);
+        if(el) el.textContent = 'Saving…';
+        try{
+          await commit();
+          try{ await api('/reload_credentials', {}); }catch(e){}
+          credEdit = false;
+          dialog('<div class="cr-ok"><svg viewBox="0 0 24 24" width="38" height="38" fill="none"><path d="M5 12.5l4.2 4.2L19 7" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg></div><h1 class="heading" style="justify-content:center; font-size:18px;">Credentials changed successfully</h1><button type="button" class="submit" id="cdDone" style="width:100%; margin-top:18px;">Done</button>');
+          $('cdDone').onclick = closeDialog;
+          setTimeout(closeDialog, 3500);
+          loadCreds(); checkStatus();
+        }catch(e){
+          dialog(`<h1 class="heading" style="justify-content:center; font-size:18px; color:var(--error);">Could not save</h1><p class="subtext" style="margin:10px 0 18px;">${esc(/permission/i.test(e.message) ? 'Firestore rules blocked this change.' : e.message)}</p><button type="button" class="signout" id="cdClose" style="width:100%;">Close</button>`);
+          $('cdClose').onclick = closeDialog;
+        }
+      }, 1000);
+      $('cdCancel').onclick = () => { dead = true; clearInterval(tick); closeDialog(); };
+    };
+  }
+
+  $('credSelect').addEventListener('change', () => { credEdit = false; drawCreds(); });
+  $('adminSidebar').addEventListener('click', e => { if(e.target.closest('#navPanels')){ credEdit = false; loadCreds(); } }, true);
+
   fillLocations();
   $('panelSelect').value = cur;
   paintAddLabels();
