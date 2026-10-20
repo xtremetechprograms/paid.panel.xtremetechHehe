@@ -88,7 +88,7 @@
     });
   }
 
-  const OWN = ['panelsOverlay','serverTypeOverlay','resourceTypeOverlay','addServerOverlay','removeServerOverlay','addUserOverlay','addMemberOverlay'];
+  const OWN = ['panelsOverlay','serverTypeOverlay','resourceTypeOverlay','addServerOverlay','removeServerOverlay','addUserOverlay','apiDocsOverlay'];
   const hideOwn = () => OWN.forEach(o => { const e = $(o); if(e) e.classList.remove('show'); });
 
   $('adminSidebar').addEventListener('click', e => {
@@ -170,11 +170,11 @@
   }
   new MutationObserver(paintMeta).observe($('serverControlName'), { childList:true, characterData:true, subtree:true });
 
-  const mb = { users:[], counts:null, h:null, q:'' };
+  const mb = { users:[], docId:'', q:'' };
   const fmtDate = t => t ? new Date(t).toLocaleDateString(undefined, { day:'2-digit', month:'short', year:'numeric' }) : '—';
   const fmtTime = t => t ? new Date(t).toLocaleString(undefined, { day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit' }) : '';
   const avatar = u => u.photo ? `<img class="mb-av" src="${esc(u.photo)}" alt="">` : `<span class="mb-av mb-av-t">${esc((u.username || u.email || '?').charAt(0).toUpperCase())}</span>`;
-  const xapi = (path, body) => api(path, { docId: pendingControlDoc, ...body });
+  const xapi = (path, body) => api(path, { docId: mb.docId, ...body });
 
   function drawMembers(){
     const byOwner = mb.users.filter(u => u.grantedRole === 'owner').length;
@@ -182,7 +182,7 @@
     $('mbStats').innerHTML = `<span class="mb-chip"><b>${c.total}</b> member${c.total === 1 ? '' : 's'}</span><span class="mb-chip"><b>${c.byOwner}</b> added by owner</span><span class="mb-chip"><b>${c.byAdmin}</b> from admin</span>`;
     const q = mb.q.trim().toLowerCase();
     const rows = mb.users.filter(u => !q || [u.username, u.uid, u.email, u.tag].some(v => String(v || '').toLowerCase().includes(q)));
-    const box = $('accList');
+    const box = $('mbList');
     box.replaceChildren();
     if(!rows.length){ box.innerHTML = `<p class="server-list-empty">${mb.users.length ? 'No members match your search.' : 'No members yet.'}</p>`; return; }
     rows.forEach(u => {
@@ -211,7 +211,7 @@
       <div class="field"><label for="mbTag">Tag</label><input type="text" id="mbTag" maxlength="24" value="${esc(m.tag)}"></div>
       <div class="field" style="margin-top:14px;"><label for="mbDesc">Description</label><textarea id="mbDesc" class="mb-ta" maxlength="600" placeholder="About this member">${esc(m.description)}</textarea></div>
       <div class="field" style="margin-top:14px;"><label for="mbPersonal">Personal description <span class="mb-priv">Only you can see this</span></label><textarea id="mbPersonal" class="mb-ta" maxlength="1000" placeholder="Private notes, visible only to you">${esc(d.personal)}</textarea></div>
-      <div style="display:flex; gap:10px; margin:14px 0 22px; flex-wrap:wrap;"><button type="button" class="plg-btn" id="mbSave">Save</button><button type="button" class="plg-btn" id="mbEdit">Edit access</button><button type="button" class="plg-btn danger" id="mbRemove">Remove</button></div>
+      <div style="display:flex; gap:10px; margin:14px 0 22px; flex-wrap:wrap;"><button type="button" class="plg-btn" id="mbSave">Save</button><button type="button" class="plg-btn danger" id="mbRemove">Remove</button></div>
       <p class="mm-sub">Logs</p>
       <div class="mb-logs">${logs}</div>`;
     $('mbBack').onclick = closeDetail;
@@ -224,8 +224,11 @@
         st.textContent = 'Saved.';
       }catch(e){ st.classList.add('err'); st.textContent = e.message; }
     };
-    $('mbEdit').onclick = () => { closeDetail(); if(mb.h) mb.h.edit(m); };
-    $('mbRemove').onclick = async () => { if(mb.h){ await mb.h.remove(m); closeDetail(); } };
+    $('mbRemove').onclick = async () => {
+      if(!confirm(`Remove access for ${m.email}?`)) return;
+      try{ await xapi('/remove_server_access', { email: m.email }); mb.users = mb.users.filter(x => x.email !== m.email); closeDetail(); }
+      catch(e){ const st = $('mbStatus'); st.classList.add('err'); st.textContent = e.message; }
+    };
   }
   function closeDetail(){ $('mbDetail').style.display = 'none'; $('mbMain').style.display = ''; drawMembers(); }
 
@@ -233,12 +236,14 @@
   $('mbSearch').addEventListener('keydown', e => { if(e.key === 'Enter'){ e.preventDefault(); $('mbSearchBtn').click(); } });
   $('mbSearch').addEventListener('input', e => { if(!e.target.value && mb.q){ mb.q = ''; drawMembers(); } });
 
-  window.xtMembers = {
-    render(users, counts, h){
-      mb.users = users || []; mb.counts = counts; mb.h = h;
-      $('mbDetail').style.display = 'none'; $('mbMain').style.display = '';
-      drawMembers();
-    }
+  window.xtUsersLoad = async function(docId){
+    mb.docId = docId; mb.q = '';
+    $('mbSearch').value = '';
+    $('mbDetail').style.display = 'none'; $('mbMain').style.display = '';
+    $('mbStats').innerHTML = '';
+    $('mbList').innerHTML = '<p class="server-list-empty">Loading…</p>';
+    try{ const d = await api('/server_access_list', { docId }); mb.users = d.users || []; drawMembers(); }
+    catch(e){ $('mbList').innerHTML = `<p class="server-list-empty">${esc(e.message)}</p>`; }
   };
 
 
@@ -350,20 +355,17 @@
   $('adminSidebar').addEventListener('click', e => { if(e.target.closest('#navPanels')){ credEdit = false; loadCreds(); } }, true);
 
   window.xtShowAddUser = on => { $('addUserOverlay').classList.toggle('show', !!on); $('serverUsersOverlay').classList.toggle('show', !on); if(on) $('addUserEmail').focus({ preventScroll:true }); };
-  window.xtShowAddMember = on => { $('addMemberOverlay').classList.toggle('show', !!on); $('accessOverlay').classList.toggle('show', !on); };
-  $('addUserOpen').addEventListener('click', () => window.xtShowAddUser(true));
+  window.xtShowAddUser = on => { $('addUserOverlay').classList.toggle('show', !!on); $('serverUsersOverlay').classList.toggle('show', !on); if(on) $('addUserEmail').focus({ preventScroll:true }); };
   $('addUserBack').addEventListener('click', () => window.xtShowAddUser(false));
-  $('mbAdd').addEventListener('click', () => { if(window.xtAccReset) window.xtAccReset(); window.xtShowAddMember(true); });
-  $('amBack').addEventListener('click', () => { if(window.xtAccReset) window.xtAccReset(); window.xtShowAddMember(false); });
 
-  const views = [...document.querySelectorAll('.manage-view')];
-  new MutationObserver(recs => {
-    let win = null;
-    recs.forEach(r => { const t = r.target; if(t.classList.contains('show') && !(r.oldValue || '').split(/\s+/).includes('show')) win = t; });
-    if(win) views.forEach(v => { if(v !== win) v.classList.remove('show'); });
-  }).observe(document.getElementById('pages'), { attributes:true, attributeFilter:['class'], attributeOldValue:true, subtree:true });
-  const shown = views.filter(v => v.classList.contains('show'));
-  shown.slice(0, -1).forEach(v => v.classList.remove('show'));
+  $('apDocsOpen').addEventListener('click', () => { $('apiDocsOverlay').classList.add('show'); $('apiDocsOverlay').scrollTop = 0; });
+  $('apDocsBack').addEventListener('click', () => { $('apiDocsOverlay').classList.remove('show'); $('apiOverlay').classList.add('show'); });
+  $('apiDocsOverlay').addEventListener('click', async e => {
+    const b = e.target.closest('.doc-copy'); if(!b) return;
+    const t = b.parentElement.querySelector('code').textContent.replace(/https:\/\/YOUR-BACKEND/g, API_BASE || 'https://YOUR-BACKEND');
+    try{ await navigator.clipboard.writeText(t); b.textContent = 'Copied'; setTimeout(() => { b.textContent = 'Copy'; }, 900); }catch(_){}
+  });
+  document.querySelectorAll('#apiDocsOverlay .doc-base').forEach(n => { n.textContent = API_BASE || 'https://YOUR-BACKEND'; });
 
   fillLocations();
   $('panelSelect').value = cur;

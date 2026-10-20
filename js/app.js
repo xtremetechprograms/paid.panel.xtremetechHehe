@@ -1295,6 +1295,7 @@
   }
 
   async function refreshServerUsersList(){
+    if(window.xtUsersLoad) return window.xtUsersLoad(pendingServerDocId);
     serverUsersList.innerHTML = '<p class="server-list-empty">Loading…</p>';
     try{
       const idToken = await auth.currentUser.getIdToken();
@@ -3582,7 +3583,7 @@
   const MC_ONLY = ['config','plugins','members','worlds'];
   const isMc = () => window.mcCtx !== false;
   const visPerms = () => isMc() ? PERMS : PERMS.filter(([k]) => !MC_ONLY.includes(k));
-  const aStatus = (m, err) => { ['accStatus','accStatus2'].forEach(id => { $(id).textContent = m || ''; $(id).classList.toggle('err', !!err); }); };
+  const aStatus = (m, err) => { $('accStatus').textContent = m || ''; $('accStatus').classList.toggle('err', !!err); };
   function renderPerms(){
     const box = $('accPerms');
     box.replaceChildren();
@@ -3603,7 +3604,7 @@
   function resetForm(){
     $('accEmail').value = ''; $('accPass').value = ''; $('accEmail').readOnly = false;
     $('accCpu').value = $('accRam').value = $('accDisk').value = ''; $('accExpiry').value = '';
-    $('accFormTitle').textContent = 'Add Member';
+    $('accFormTitle').textContent = 'Add Members';
     ac.full = isMc();
     ac.perms = { start:true, stop:true, restart:true, console:true, files:true };
     paintSpecs();
@@ -3619,14 +3620,13 @@
     ac.perms = {}; PERMS.forEach(([k]) => { ac.perms[k] = !u.perms || !!u.perms[k]; });
     paintSpecs();
     renderPerms();
-    if(window.xtShowAddMember) window.xtShowAddMember(true);
   }
   async function removeUser(u){
     if(!confirm(`Remove access for ${u.email}?`)) return;
     try{ await api('/remove_server_access', { email:u.email }); await loadUsers(); }catch(err){ aStatus(err.message, true); }
   }
   function renderUsers(){
-    if(window.xtMembers) window.xtMembers.render(ac.users, ac.counts, { edit: editUser, remove: removeUser, reload: loadUsers });
+    return;
   }
   async function loadUsers(){
     try{
@@ -3648,7 +3648,6 @@
       await api('/assign_server_access', { email, password:$('accPass').value, fullAccess:full, perms, cpuLimit: full || !document.body.classList.contains('role-admin') ? null : $('accCpu').value, ramLimit: full || !document.body.classList.contains('role-admin') ? null : $('accRam').value, storageLimit: full || !document.body.classList.contains('role-admin') ? null : $('accDisk').value, expiry: $('accExpiry').value || null });
       resetForm();
       await loadUsers();
-      if(window.xtShowAddMember) window.xtShowAddMember(false);
       aStatus('Saved.');
     }catch(e){ aStatus(e.message, true); }
   });

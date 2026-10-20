@@ -5,9 +5,20 @@
   <h1 class="heading" style="text-align:left; justify-content:flex-start;" id="serverUsersName"></h1>
   <p class="subtext" style="text-align:left; margin-bottom:16px;">Users with access to this server.</p>
 
-  <div id="serverUsersList" style="display:flex; flex-direction:column; gap:10px; margin-bottom:28px;"></div>
-
-  <button type="button" class="plg-btn" id="addUserOpen">+ Add User</button>
+  <div id="serverUsersList" style="display:none;"></div>
+  <div id="mbMain">
+    <div class="mb-top">
+      <p class="mm-sub" style="margin:0;">Members with access</p>
+      <div class="mb-stats" id="mbStats"></div>
+    </div>
+    <div class="pn-tools">
+      <div class="pn-search"><input type="text" id="mbSearch" placeholder="Search by name, user ID, email or tag…" autocomplete="off" spellcheck="false"></div>
+      <button type="button" class="plg-btn" id="mbSearchBtn">Search</button>
+    </div>
+    <div class="mb-head"><span></span><span>Name</span><span>User ID</span><span>Date Added</span><span>Tag</span></div>
+    <div class="mb-list" id="mbList" style="margin-bottom:26px;"></div>
+  </div>
+  <div id="mbDetail" style="display:none;"></div>
 </div>
 
 <div class="manage-view" id="addUserOverlay">

@@ -16,6 +16,7 @@
         <div class="ac-row"><button type="button" class="plg-btn" id="apCopy">Copy</button><button type="button" class="plg-btn" id="apJson">Download JSON</button></div>
       </div>
     </div>
+    <button type="button" class="plg-btn" id="apDocsOpen" style="margin-top:16px; align-self:flex-start;">See API Documentations</button>
   </div>
   <div class="ak-right">
     <h1 class="heading" style="text-align:left; justify-content:flex-start;">Saved keys</h1>
@@ -24,3 +25,247 @@
   </div>
 </div>
 
+<div class="manage-view" id="apiDocsOverlay">
+  <div class="doc-wrap">
+  <button type="button" class="pn-back" id="apDocsBack">← Back</button>
+  <h1 class="heading" style="text-align:left; justify-content:flex-start;">API Documentation</h1>
+  <p class="subtext" style="text-align:left; margin-bottom:18px;">Run the same server actions you use in this panel from your own scripts, bots or websites.</p>
+  <nav class="doc-nav">
+    <a href="#doc-start">Getting started</a><a href="#doc-auth">Authentication</a><a href="#doc-err">Errors</a><a href="#doc-Server">Server</a><a href="#doc-Files">Files</a><a href="#doc-Schedules">Schedules</a><a href="#doc-Minecraft">Minecraft</a><a href="#doc-web">Sign-in only</a>
+  </nav>
+  <section id="doc-start"><h2>Getting started</h2>
+    <p>Base URL: <code class="doc-base">https://YOUR-BACKEND</code></p>
+    <ol class="doc-ol"><li>Open the API panel and press <b>Generate key</b>. Copy the key now, it is shown once.</li><li>Find your server's <code>docId</code>. It is the ID in the panel URL, for example <code>/&lt;docId&gt;/console</code>.</li><li>Send a <code>POST</code> request with a JSON body and the <code>X-API-Key</code> header.</li></ol>
+    <div class="doc-code"><button type="button" class="doc-copy">Copy</button><pre><code>curl -X POST https://YOUR-BACKEND/server_power \
+  -H &quot;X-API-Key: xtech12345678901&quot; \
+  -H &quot;Content-Type: application/json&quot; \
+  -d &#x27;{&quot;docId&quot;: &quot;YOUR_SERVER_DOC_ID&quot;, &quot;signal&quot;: &quot;restart&quot;}&#x27;</code></pre></div>
+    <p>Every request is <code>POST</code> with <code>Content-Type: application/json</code>. Every body needs <code>docId</code>. Successful responses contain <code>"ok": true</code>.</p>
+  </section>
+  <section id="doc-auth"><h2>Authentication</h2>
+    <table class="doc-t"><tr><th>Item</th><th>Details</th></tr>
+    <tr><td>Header</td><td><code>X-API-Key: xtech12345678901</code></td></tr>
+    <tr><td>Key format</td><td><code>xtech</code> followed by 11 digits</td></tr>
+    <tr><td>Keys per account</td><td>Up to 10</td></tr>
+    <tr><td>Allowed IPs</td><td>Optional. Up to 20 addresses or CIDR ranges per key. Requests from other IPs are rejected.</td></tr>
+    <tr><td>Access</td><td>A key acts as your account. You can only do what you can do in the panel on that server, including the permissions an owner gave you.</td></tr>
+    <tr><td>Failed attempts</td><td>15 bad keys in one minute from one IP is blocked with 429.</td></tr></table>
+    <p class="doc-note">Keep keys private. If a key leaks, delete it in the API panel.</p>
+  </section>
+  <section id="doc-err"><h2>Errors</h2>
+    <p>Errors return <code>{"ok": false, "error": "message"}</code> with an HTTP status.</p>
+    <div class="doc-code"><button type="button" class="doc-copy">Copy</button><pre><code>{&quot;ok&quot;: false, &quot;error&quot;: &quot;permission denied&quot;}</code></pre></div>
+    <table class="doc-t"><tr><th>Status</th><th>Meaning</th></tr>
+    <tr><td>400</td><td>Missing or invalid field, or missing <code>docId</code></td></tr>
+    <tr><td>401</td><td>Invalid key or sign-in required</td></tr>
+    <tr><td>403</td><td>Not allowed or permission denied for this server</td></tr>
+    <tr><td>413</td><td>Storage limit reached</td></tr>
+    <tr><td>429</td><td>Too many failed attempts</td></tr>
+    <tr><td>502 / 503</td><td>The host panel is unreachable or still being set up</td></tr></table>
+  </section>
+  <section id="doc-Server"><h2>Server</h2><div class="doc-ep"><div class="doc-h"><span class="doc-m">POST</span><code class="doc-p">/server_perms</code></div><p>Returns what this key&#x27;s account may do on the server.</p><h5>Body</h5><p class="doc-none">No body fields besides <code>docId</code>.</p><h5>Example</h5><div class="doc-code"><button type="button" class="doc-copy">Copy</button><pre><code>curl -X POST https://YOUR-BACKEND/server_perms \
+  -H &quot;X-API-Key: xtech12345678901&quot; \
+  -H &quot;Content-Type: application/json&quot; \
+  -d &#x27;{&quot;docId&quot;: &quot;YOUR_SERVER_DOC_ID&quot;}&#x27;</code></pre></div><h5>Response</h5><div class="doc-code"><button type="button" class="doc-copy">Copy</button><pre><code>{
+  &quot;ok&quot;: true,
+  &quot;admin&quot;: false,
+  &quot;full&quot;: true,
+  &quot;perms&quot;: {
+    &quot;start&quot;: true,
+    &quot;stop&quot;: true,
+    &quot;restart&quot;: true,
+    &quot;kill&quot;: true,
+    &quot;files&quot;: true
+  }
+}</code></pre></div></div><div class="doc-ep"><div class="doc-h"><span class="doc-m">POST</span><code class="doc-p">/server_stats</code></div><p>Live CPU, memory and disk usage with the limits that apply.</p><p class="doc-note">Example only. Exact fields depend on the server type.</p><h5>Body</h5><p class="doc-none">No body fields besides <code>docId</code>.</p><h5>Example</h5><div class="doc-code"><button type="button" class="doc-copy">Copy</button><pre><code>curl -X POST https://YOUR-BACKEND/server_stats \
+  -H &quot;X-API-Key: xtech12345678901&quot; \
+  -H &quot;Content-Type: application/json&quot; \
+  -d &#x27;{&quot;docId&quot;: &quot;YOUR_SERVER_DOC_ID&quot;}&#x27;</code></pre></div><h5>Response</h5><div class="doc-code"><button type="button" class="doc-copy">Copy</button><pre><code>{
+  &quot;ok&quot;: true,
+  &quot;cpu_percent&quot;: 12.4,
+  &quot;memory_mb&quot;: 512,
+  &quot;disk_mb&quot;: 1480,
+  &quot;cpu_limit&quot;: 100,
+  &quot;ram_limit&quot;: 1024,
+  &quot;storage_limit&quot;: 5000
+}</code></pre></div></div><div class="doc-ep"><div class="doc-h"><span class="doc-m">POST</span><code class="doc-p">/server_console</code></div><p>Recent console lines, resource usage, address and limits.</p><h5>Body</h5><p class="doc-none">No body fields besides <code>docId</code>.</p><h5>Example</h5><div class="doc-code"><button type="button" class="doc-copy">Copy</button><pre><code>curl -X POST https://YOUR-BACKEND/server_console \
+  -H &quot;X-API-Key: xtech12345678901&quot; \
+  -H &quot;Content-Type: application/json&quot; \
+  -d &#x27;{&quot;docId&quot;: &quot;YOUR_SERVER_DOC_ID&quot;}&#x27;</code></pre></div><h5>Response</h5><div class="doc-code"><button type="button" class="doc-copy">Copy</button><pre><code>{
+  &quot;ok&quot;: true,
+  &quot;logs&quot;: [
+    &quot;[Server] Done!&quot;
+  ],
+  &quot;resources&quot;: {
+    &quot;cpu_absolute&quot;: 3.1,
+    &quot;memory_bytes&quot;: 536870912,
+    &quot;network_rx_bytes&quot;: 1024,
+    &quot;network_tx_bytes&quot;: 2048,
+    &quot;uptime&quot;: 86400000
+  },
+  &quot;address&quot;: &quot;1.2.3.4:25565&quot;,
+  &quot;limits&quot;: {
+    &quot;cpuLimit&quot;: 100,
+    &quot;ramLimit&quot;: 1024,
+    &quot;storageLimit&quot;: 5000,
+    &quot;networkLimit&quot;: null
+  }
+}</code></pre></div></div><div class="doc-ep"><div class="doc-h"><span class="doc-m">POST</span><code class="doc-p">/server_power</code></div><p>Sends a power signal. Needs the matching permission (start, stop, restart or kill).</p><h5>Body</h5><table class="doc-t"><tr><th>Field</th><th>Type</th><th>Required</th><th>Description</th></tr><tr><td><code>signal</code></td><td>string</td><td>Yes</td><td>start, stop, restart or kill</td></tr></table><h5>Example</h5><div class="doc-code"><button type="button" class="doc-copy">Copy</button><pre><code>curl -X POST https://YOUR-BACKEND/server_power \
+  -H &quot;X-API-Key: xtech12345678901&quot; \
+  -H &quot;Content-Type: application/json&quot; \
+  -d &#x27;{&quot;docId&quot;: &quot;YOUR_SERVER_DOC_ID&quot;, &quot;signal&quot;: &quot;restart&quot;}&#x27;</code></pre></div><h5>Response</h5><div class="doc-code"><button type="button" class="doc-copy">Copy</button><pre><code>{
+  &quot;ok&quot;: true,
+  &quot;signal&quot;: &quot;restart&quot;,
+  &quot;message&quot;: &quot;Restarting&quot;,
+  &quot;queued&quot;: false
+}</code></pre></div></div><div class="doc-ep"><div class="doc-h"><span class="doc-m">POST</span><code class="doc-p">/server_command</code></div><p>Sends a console command to a running server.</p><p class="doc-note">Requires full access and the console permission.</p><h5>Body</h5><table class="doc-t"><tr><th>Field</th><th>Type</th><th>Required</th><th>Description</th></tr><tr><td><code>command</code></td><td>string</td><td>Yes</td><td>The command to run</td></tr></table><h5>Example</h5><div class="doc-code"><button type="button" class="doc-copy">Copy</button><pre><code>curl -X POST https://YOUR-BACKEND/server_command \
+  -H &quot;X-API-Key: xtech12345678901&quot; \
+  -H &quot;Content-Type: application/json&quot; \
+  -d &#x27;{&quot;docId&quot;: &quot;YOUR_SERVER_DOC_ID&quot;, &quot;command&quot;: &quot;say hello&quot;}&#x27;</code></pre></div><h5>Response</h5><div class="doc-code"><button type="button" class="doc-copy">Copy</button><pre><code>{
+  &quot;ok&quot;: true
+}</code></pre></div></div></section>
+  <section id="doc-Files"><h2>Files</h2><div class="doc-ep"><div class="doc-h"><span class="doc-m">POST</span><code class="doc-p">/list_files</code></div><p>Lists a folder.</p><h5>Body</h5><table class="doc-t"><tr><th>Field</th><th>Type</th><th>Required</th><th>Description</th></tr><tr><td><code>path</code></td><td>string</td><td>No</td><td>Folder or file path inside the server, starting with /. Default /</td></tr></table><h5>Example</h5><div class="doc-code"><button type="button" class="doc-copy">Copy</button><pre><code>curl -X POST https://YOUR-BACKEND/list_files \
+  -H &quot;X-API-Key: xtech12345678901&quot; \
+  -H &quot;Content-Type: application/json&quot; \
+  -d &#x27;{&quot;docId&quot;: &quot;YOUR_SERVER_DOC_ID&quot;, &quot;path&quot;: &quot;/&quot;}&#x27;</code></pre></div><h5>Response</h5><div class="doc-code"><button type="button" class="doc-copy">Copy</button><pre><code>{
+  &quot;ok&quot;: true,
+  &quot;files&quot;: [
+    {
+      &quot;name&quot;: &quot;server.properties&quot;,
+      &quot;is_file&quot;: true,
+      &quot;size&quot;: 1204
+    }
+  ]
+}</code></pre></div></div><div class="doc-ep"><div class="doc-h"><span class="doc-m">POST</span><code class="doc-p">/file_contents</code></div><p>Reads a text file.</p><h5>Body</h5><table class="doc-t"><tr><th>Field</th><th>Type</th><th>Required</th><th>Description</th></tr><tr><td><code>path</code></td><td>string</td><td>Yes</td><td>File path</td></tr></table><h5>Example</h5><div class="doc-code"><button type="button" class="doc-copy">Copy</button><pre><code>curl -X POST https://YOUR-BACKEND/file_contents \
+  -H &quot;X-API-Key: xtech12345678901&quot; \
+  -H &quot;Content-Type: application/json&quot; \
+  -d &#x27;{&quot;docId&quot;: &quot;YOUR_SERVER_DOC_ID&quot;, &quot;path&quot;: &quot;/server.properties&quot;}&#x27;</code></pre></div><h5>Response</h5><div class="doc-code"><button type="button" class="doc-copy">Copy</button><pre><code>{
+  &quot;ok&quot;: true,
+  &quot;content&quot;: &quot;motd=Hello&quot;
+}</code></pre></div></div><div class="doc-ep"><div class="doc-h"><span class="doc-m">POST</span><code class="doc-p">/file_link</code></div><p>Returns a temporary download link for a file.</p><h5>Body</h5><table class="doc-t"><tr><th>Field</th><th>Type</th><th>Required</th><th>Description</th></tr><tr><td><code>path</code></td><td>string</td><td>Yes</td><td>File path</td></tr></table><h5>Example</h5><div class="doc-code"><button type="button" class="doc-copy">Copy</button><pre><code>curl -X POST https://YOUR-BACKEND/file_link \
+  -H &quot;X-API-Key: xtech12345678901&quot; \
+  -H &quot;Content-Type: application/json&quot; \
+  -d &#x27;{&quot;docId&quot;: &quot;YOUR_SERVER_DOC_ID&quot;, &quot;path&quot;: &quot;/world.zip&quot;}&#x27;</code></pre></div><h5>Response</h5><div class="doc-code"><button type="button" class="doc-copy">Copy</button><pre><code>{
+  &quot;ok&quot;: true,
+  &quot;url&quot;: &quot;https://node.example/download/file?token=...&quot;
+}</code></pre></div></div><div class="doc-ep"><div class="doc-h"><span class="doc-m">POST</span><code class="doc-p">/save_file</code></div><p>Writes text to a file. Returns 413 if the storage limit would be exceeded.</p><h5>Body</h5><table class="doc-t"><tr><th>Field</th><th>Type</th><th>Required</th><th>Description</th></tr><tr><td><code>path</code></td><td>string</td><td>Yes</td><td>File path</td></tr><tr><td><code>content</code></td><td>string</td><td>No</td><td>New file content</td></tr></table><h5>Example</h5><div class="doc-code"><button type="button" class="doc-copy">Copy</button><pre><code>curl -X POST https://YOUR-BACKEND/save_file \
+  -H &quot;X-API-Key: xtech12345678901&quot; \
+  -H &quot;Content-Type: application/json&quot; \
+  -d &#x27;{&quot;docId&quot;: &quot;YOUR_SERVER_DOC_ID&quot;, &quot;path&quot;: &quot;/notes.txt&quot;, &quot;content&quot;: &quot;hello&quot;}&#x27;</code></pre></div><h5>Response</h5><div class="doc-code"><button type="button" class="doc-copy">Copy</button><pre><code>{
+  &quot;ok&quot;: true
+}</code></pre></div></div><div class="doc-ep"><div class="doc-h"><span class="doc-m">POST</span><code class="doc-p">/make_dir</code></div><p>Creates a folder.</p><h5>Body</h5><table class="doc-t"><tr><th>Field</th><th>Type</th><th>Required</th><th>Description</th></tr><tr><td><code>path</code></td><td>string</td><td>No</td><td>Folder or file path inside the server, starting with /. Default /</td></tr><tr><td><code>name</code></td><td>string</td><td>Yes</td><td>New folder name (no slashes)</td></tr></table><h5>Example</h5><div class="doc-code"><button type="button" class="doc-copy">Copy</button><pre><code>curl -X POST https://YOUR-BACKEND/make_dir \
+  -H &quot;X-API-Key: xtech12345678901&quot; \
+  -H &quot;Content-Type: application/json&quot; \
+  -d &#x27;{&quot;docId&quot;: &quot;YOUR_SERVER_DOC_ID&quot;, &quot;path&quot;: &quot;/&quot;, &quot;name&quot;: &quot;backups&quot;}&#x27;</code></pre></div><h5>Response</h5><div class="doc-code"><button type="button" class="doc-copy">Copy</button><pre><code>{
+  &quot;ok&quot;: true
+}</code></pre></div></div><div class="doc-ep"><div class="doc-h"><span class="doc-m">POST</span><code class="doc-p">/rename_file</code></div><p>Renames a file or folder.</p><h5>Body</h5><table class="doc-t"><tr><th>Field</th><th>Type</th><th>Required</th><th>Description</th></tr><tr><td><code>path</code></td><td>string</td><td>No</td><td>Folder or file path inside the server, starting with /. Default /</td></tr><tr><td><code>from</code></td><td>string</td><td>Yes</td><td>Current name</td></tr><tr><td><code>to</code></td><td>string</td><td>Yes</td><td>New name</td></tr></table><h5>Example</h5><div class="doc-code"><button type="button" class="doc-copy">Copy</button><pre><code>curl -X POST https://YOUR-BACKEND/rename_file \
+  -H &quot;X-API-Key: xtech12345678901&quot; \
+  -H &quot;Content-Type: application/json&quot; \
+  -d &#x27;{&quot;docId&quot;: &quot;YOUR_SERVER_DOC_ID&quot;, &quot;path&quot;: &quot;/&quot;, &quot;from&quot;: &quot;a.txt&quot;, &quot;to&quot;: &quot;b.txt&quot;}&#x27;</code></pre></div><h5>Response</h5><div class="doc-code"><button type="button" class="doc-copy">Copy</button><pre><code>{
+  &quot;ok&quot;: true
+}</code></pre></div></div><div class="doc-ep"><div class="doc-h"><span class="doc-m">POST</span><code class="doc-p">/delete_files</code></div><p>Deletes files or folders.</p><h5>Body</h5><table class="doc-t"><tr><th>Field</th><th>Type</th><th>Required</th><th>Description</th></tr><tr><td><code>path</code></td><td>string</td><td>No</td><td>Folder or file path inside the server, starting with /. Default /</td></tr><tr><td><code>names</code></td><td>string[]</td><td>Yes</td><td>Names to delete</td></tr></table><h5>Example</h5><div class="doc-code"><button type="button" class="doc-copy">Copy</button><pre><code>curl -X POST https://YOUR-BACKEND/delete_files \
+  -H &quot;X-API-Key: xtech12345678901&quot; \
+  -H &quot;Content-Type: application/json&quot; \
+  -d &#x27;{&quot;docId&quot;: &quot;YOUR_SERVER_DOC_ID&quot;, &quot;path&quot;: &quot;/&quot;, &quot;names&quot;: [&quot;old.log&quot;]}&#x27;</code></pre></div><h5>Response</h5><div class="doc-code"><button type="button" class="doc-copy">Copy</button><pre><code>{
+  &quot;ok&quot;: true
+}</code></pre></div></div><div class="doc-ep"><div class="doc-h"><span class="doc-m">POST</span><code class="doc-p">/upload_url</code></div><p>Returns a temporary upload link.</p><p class="doc-note">Full access only.</p><h5>Body</h5><table class="doc-t"><tr><th>Field</th><th>Type</th><th>Required</th><th>Description</th></tr><tr><td><code>path</code></td><td>string</td><td>No</td><td>Folder or file path inside the server, starting with /. Default /</td></tr></table><h5>Example</h5><div class="doc-code"><button type="button" class="doc-copy">Copy</button><pre><code>curl -X POST https://YOUR-BACKEND/upload_url \
+  -H &quot;X-API-Key: xtech12345678901&quot; \
+  -H &quot;Content-Type: application/json&quot; \
+  -d &#x27;{&quot;docId&quot;: &quot;YOUR_SERVER_DOC_ID&quot;, &quot;path&quot;: &quot;/&quot;}&#x27;</code></pre></div><h5>Response</h5><div class="doc-code"><button type="button" class="doc-copy">Copy</button><pre><code>{
+  &quot;ok&quot;: true,
+  &quot;url&quot;: &quot;https://node.example/upload/file?token=...&quot;
+}</code></pre></div></div></section>
+  <section id="doc-Schedules"><h2>Schedules</h2><div class="doc-ep"><div class="doc-h"><span class="doc-m">POST</span><code class="doc-p">/schedule_list</code></div><p>Lists the server&#x27;s schedules.</p><h5>Body</h5><p class="doc-none">No body fields besides <code>docId</code>.</p><h5>Example</h5><div class="doc-code"><button type="button" class="doc-copy">Copy</button><pre><code>curl -X POST https://YOUR-BACKEND/schedule_list \
+  -H &quot;X-API-Key: xtech12345678901&quot; \
+  -H &quot;Content-Type: application/json&quot; \
+  -d &#x27;{&quot;docId&quot;: &quot;YOUR_SERVER_DOC_ID&quot;}&#x27;</code></pre></div><h5>Response</h5><div class="doc-code"><button type="button" class="doc-copy">Copy</button><pre><code>{
+  &quot;ok&quot;: true,
+  &quot;schedules&quot;: [
+    {
+      &quot;id&quot;: 4,
+      &quot;name&quot;: &quot;Nightly restart&quot;,
+      &quot;cron&quot;: {
+        &quot;minute&quot;: &quot;0&quot;,
+        &quot;hour&quot;: &quot;4&quot;,
+        &quot;day_of_month&quot;: &quot;*&quot;,
+        &quot;month&quot;: &quot;*&quot;,
+        &quot;day_of_week&quot;: &quot;*&quot;
+      },
+      &quot;is_active&quot;: true,
+      &quot;only_when_online&quot;: false,
+      &quot;last_run_at&quot;: null,
+      &quot;next_run_at&quot;: &quot;2026-10-21T04:00:00+00:00&quot;,
+      &quot;action&quot;: &quot;restart&quot;,
+      &quot;warn&quot;: true,
+      &quot;task_ids&quot;: [
+        9,
+        10
+      ]
+    }
+  ]
+}</code></pre></div></div><div class="doc-ep"><div class="doc-h"><span class="doc-m">POST</span><code class="doc-p">/schedule_save</code></div><p>Creates a schedule, or updates it when schedule_id is given.</p><h5>Body</h5><table class="doc-t"><tr><th>Field</th><th>Type</th><th>Required</th><th>Description</th></tr><tr><td><code>name</code></td><td>string</td><td>Yes</td><td>1 to 60 characters</td></tr><tr><td><code>cron</code></td><td>object</td><td>Yes</td><td>minute, hour, day_of_month, month, day_of_week (cron fields)</td></tr><tr><td><code>action</code></td><td>string</td><td>Yes</td><td>restart, stop or start</td></tr><tr><td><code>is_active</code></td><td>boolean</td><td>No</td><td>Default true</td></tr><tr><td><code>only_when_online</code></td><td>boolean</td><td>No</td><td>Default false</td></tr><tr><td><code>warn</code></td><td>boolean</td><td>No</td><td>Send a 1 minute warning before restart or stop</td></tr><tr><td><code>schedule_id</code></td><td>integer</td><td>No</td><td>Existing schedule to update</td></tr></table><h5>Example</h5><div class="doc-code"><button type="button" class="doc-copy">Copy</button><pre><code>curl -X POST https://YOUR-BACKEND/schedule_save \
+  -H &quot;X-API-Key: xtech12345678901&quot; \
+  -H &quot;Content-Type: application/json&quot; \
+  -d &#x27;{&quot;docId&quot;: &quot;YOUR_SERVER_DOC_ID&quot;, &quot;name&quot;: &quot;Nightly restart&quot;, &quot;cron&quot;: {&quot;minute&quot;: &quot;0&quot;, &quot;hour&quot;: &quot;4&quot;, &quot;day_of_month&quot;: &quot;*&quot;, &quot;month&quot;: &quot;*&quot;, &quot;day_of_week&quot;: &quot;*&quot;}, &quot;action&quot;: &quot;restart&quot;, &quot;warn&quot;: true}&#x27;</code></pre></div><h5>Response</h5><div class="doc-code"><button type="button" class="doc-copy">Copy</button><pre><code>{
+  &quot;ok&quot;: true,
+  &quot;id&quot;: 4
+}</code></pre></div></div><div class="doc-ep"><div class="doc-h"><span class="doc-m">POST</span><code class="doc-p">/schedule_active</code></div><p>Turns a schedule on or off.</p><h5>Body</h5><table class="doc-t"><tr><th>Field</th><th>Type</th><th>Required</th><th>Description</th></tr><tr><td><code>schedule_id</code></td><td>integer</td><td>Yes</td><td>Schedule ID</td></tr><tr><td><code>active</code></td><td>boolean</td><td>Yes</td><td>true to enable</td></tr></table><h5>Example</h5><div class="doc-code"><button type="button" class="doc-copy">Copy</button><pre><code>curl -X POST https://YOUR-BACKEND/schedule_active \
+  -H &quot;X-API-Key: xtech12345678901&quot; \
+  -H &quot;Content-Type: application/json&quot; \
+  -d &#x27;{&quot;docId&quot;: &quot;YOUR_SERVER_DOC_ID&quot;, &quot;schedule_id&quot;: 4, &quot;active&quot;: false}&#x27;</code></pre></div><h5>Response</h5><div class="doc-code"><button type="button" class="doc-copy">Copy</button><pre><code>{
+  &quot;ok&quot;: true
+}</code></pre></div></div><div class="doc-ep"><div class="doc-h"><span class="doc-m">POST</span><code class="doc-p">/schedule_run</code></div><p>Runs a schedule now.</p><h5>Body</h5><table class="doc-t"><tr><th>Field</th><th>Type</th><th>Required</th><th>Description</th></tr><tr><td><code>schedule_id</code></td><td>integer</td><td>Yes</td><td>Schedule ID</td></tr></table><h5>Example</h5><div class="doc-code"><button type="button" class="doc-copy">Copy</button><pre><code>curl -X POST https://YOUR-BACKEND/schedule_run \
+  -H &quot;X-API-Key: xtech12345678901&quot; \
+  -H &quot;Content-Type: application/json&quot; \
+  -d &#x27;{&quot;docId&quot;: &quot;YOUR_SERVER_DOC_ID&quot;, &quot;schedule_id&quot;: 4}&#x27;</code></pre></div><h5>Response</h5><div class="doc-code"><button type="button" class="doc-copy">Copy</button><pre><code>{
+  &quot;ok&quot;: true
+}</code></pre></div></div><div class="doc-ep"><div class="doc-h"><span class="doc-m">POST</span><code class="doc-p">/schedule_delete</code></div><p>Deletes a schedule.</p><h5>Body</h5><table class="doc-t"><tr><th>Field</th><th>Type</th><th>Required</th><th>Description</th></tr><tr><td><code>schedule_id</code></td><td>integer</td><td>Yes</td><td>Schedule ID</td></tr></table><h5>Example</h5><div class="doc-code"><button type="button" class="doc-copy">Copy</button><pre><code>curl -X POST https://YOUR-BACKEND/schedule_delete \
+  -H &quot;X-API-Key: xtech12345678901&quot; \
+  -H &quot;Content-Type: application/json&quot; \
+  -d &#x27;{&quot;docId&quot;: &quot;YOUR_SERVER_DOC_ID&quot;, &quot;schedule_id&quot;: 4}&#x27;</code></pre></div><h5>Response</h5><div class="doc-code"><button type="button" class="doc-copy">Copy</button><pre><code>{
+  &quot;ok&quot;: true
+}</code></pre></div></div></section>
+  <section id="doc-Minecraft"><h2>Minecraft</h2><div class="doc-ep"><div class="doc-h"><span class="doc-m">POST</span><code class="doc-p">/mc_members_get</code></div><p>Whitelist, operators and bans.</p><p class="doc-note">Full access only.</p><h5>Body</h5><p class="doc-none">No body fields besides <code>docId</code>.</p><h5>Example</h5><div class="doc-code"><button type="button" class="doc-copy">Copy</button><pre><code>curl -X POST https://YOUR-BACKEND/mc_members_get \
+  -H &quot;X-API-Key: xtech12345678901&quot; \
+  -H &quot;Content-Type: application/json&quot; \
+  -d &#x27;{&quot;docId&quot;: &quot;YOUR_SERVER_DOC_ID&quot;}&#x27;</code></pre></div><h5>Response</h5><div class="doc-code"><button type="button" class="doc-copy">Copy</button><pre><code>{
+  &quot;ok&quot;: true,
+  &quot;known&quot;: [],
+  &quot;whitelist&quot;: [
+    {
+      &quot;name&quot;: &quot;Steve&quot;,
+      &quot;uuid&quot;: &quot;...&quot;
+    }
+  ],
+  &quot;ops&quot;: [
+    {
+      &quot;name&quot;: &quot;Alex&quot;,
+      &quot;uuid&quot;: &quot;...&quot;,
+      &quot;level&quot;: 4
+    }
+  ]
+}</code></pre></div></div><div class="doc-ep"><div class="doc-h"><span class="doc-m">POST</span><code class="doc-p">/mc_members_action</code></div><p>Changes the whitelist, operators or bans.</p><p class="doc-note">Full access only.</p><h5>Body</h5><table class="doc-t"><tr><th>Field</th><th>Type</th><th>Required</th><th>Description</th></tr><tr><td><code>action</code></td><td>string</td><td>Yes</td><td>For example whitelist_add, op_add, ban, banip</td></tr><tr><td><code>name</code></td><td>string</td><td>No</td><td>Player name (1 to 32 letters, digits, _ or .)</td></tr><tr><td><code>ip</code></td><td>string</td><td>No</td><td>IP address, for IP bans</td></tr><tr><td><code>reason</code></td><td>string</td><td>No</td><td>Ban reason, up to 100 characters</td></tr></table><h5>Example</h5><div class="doc-code"><button type="button" class="doc-copy">Copy</button><pre><code>curl -X POST https://YOUR-BACKEND/mc_members_action \
+  -H &quot;X-API-Key: xtech12345678901&quot; \
+  -H &quot;Content-Type: application/json&quot; \
+  -d &#x27;{&quot;docId&quot;: &quot;YOUR_SERVER_DOC_ID&quot;, &quot;action&quot;: &quot;whitelist_add&quot;, &quot;name&quot;: &quot;Steve&quot;}&#x27;</code></pre></div><h5>Response</h5><div class="doc-code"><button type="button" class="doc-copy">Copy</button><pre><code>{
+  &quot;ok&quot;: true,
+  &quot;live&quot;: true
+}</code></pre></div></div><div class="doc-ep"><div class="doc-h"><span class="doc-m">POST</span><code class="doc-p">/mc_versions</code></div><p>Lists installable versions for a server software.</p><p class="doc-note">Full access only.</p><h5>Body</h5><table class="doc-t"><tr><th>Field</th><th>Type</th><th>Required</th><th>Description</th></tr><tr><td><code>software</code></td><td>string</td><td>Yes</td><td>Software name, as shown in the panel</td></tr></table><h5>Example</h5><div class="doc-code"><button type="button" class="doc-copy">Copy</button><pre><code>curl -X POST https://YOUR-BACKEND/mc_versions \
+  -H &quot;X-API-Key: xtech12345678901&quot; \
+  -H &quot;Content-Type: application/json&quot; \
+  -d &#x27;{&quot;docId&quot;: &quot;YOUR_SERVER_DOC_ID&quot;, &quot;software&quot;: &quot;paper&quot;}&#x27;</code></pre></div><h5>Response</h5><div class="doc-code"><button type="button" class="doc-copy">Copy</button><pre><code>{
+  &quot;ok&quot;: true,
+  &quot;versions&quot;: [
+    &quot;1.21.1&quot;,
+    &quot;1.20.6&quot;
+  ]
+}</code></pre></div></div><div class="doc-ep"><div class="doc-h"><span class="doc-m">POST</span><code class="doc-p">/mc_install</code></div><p>Installs a version.</p><p class="doc-note">Full access only.</p><h5>Body</h5><table class="doc-t"><tr><th>Field</th><th>Type</th><th>Required</th><th>Description</th></tr><tr><td><code>software</code></td><td>string</td><td>Yes</td><td>Software name</td></tr><tr><td><code>version</code></td><td>string</td><td>Yes</td><td>Version from /mc_versions</td></tr></table><h5>Example</h5><div class="doc-code"><button type="button" class="doc-copy">Copy</button><pre><code>curl -X POST https://YOUR-BACKEND/mc_install \
+  -H &quot;X-API-Key: xtech12345678901&quot; \
+  -H &quot;Content-Type: application/json&quot; \
+  -d &#x27;{&quot;docId&quot;: &quot;YOUR_SERVER_DOC_ID&quot;, &quot;software&quot;: &quot;paper&quot;, &quot;version&quot;: &quot;1.21.1&quot;}&#x27;</code></pre></div><h5>Response</h5><div class="doc-code"><button type="button" class="doc-copy">Copy</button><pre><code>{
+  &quot;ok&quot;: true,
+  &quot;jar&quot;: &quot;server.jar&quot;
+}</code></pre></div></div></section>
+  <section id="doc-web"><h2>Sign-in only routes</h2><p>These routes need a signed-in web session and do not accept API keys.</p><table class="doc-t"><tr><th>Route</th><th>Purpose</th></tr><tr><td><code>/my_servers</code></td><td>Lists servers you can access.</td></tr><tr><td><code>/server_access_list, /server_member_detail, /server_member_save, /remove_server_access, /assign_server_access</code></td><td>Member management.</td></tr><tr><td><code>/api_keys_list, /api_key_generate, /api_key_revoke</code></td><td>API key management.</td></tr><tr><td><code>/account_get, /account_profile, /account_email</code></td><td>Account settings.</td></tr><tr><td><code>/panel_status, /reload_credentials</code></td><td>Admin panel tools.</td></tr></table></section>
+  </div>
+</div>
