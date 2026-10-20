@@ -7,7 +7,13 @@
 
   <div id="serverUsersList" style="display:flex; flex-direction:column; gap:10px; margin-bottom:28px;"></div>
 
-  <h1 class="heading" id="addUserHeading" style="text-align:left; justify-content:flex-start; font-size:16px;">Add User</h1>
+  <button type="button" class="plg-btn" id="addUserOpen">+ Add User</button>
+</div>
+
+<div class="manage-view" id="addUserOverlay">
+  <div class="pn-form">
+  <button type="button" class="pn-back" id="addUserBack">← Back</button>
+  <h1 class="heading" id="addUserHeading" style="text-align:left; justify-content:flex-start;">Add User</h1>
   <p class="subtext" style="text-align:left; margin-bottom:16px;">Creates a real login for them (or updates their password if the email already has one) and limits what they'll be able to use.</p>
 
   <div id="addUserError" class="error-msg"></div>
@@ -65,5 +71,5 @@
   <button type="button" class="submit" id="addUserSaveBtn" style="margin-top:20px;">
     <span>Add User</span>
   </button>
+  </div>
 </div>
-

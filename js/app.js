@@ -1111,7 +1111,7 @@
     if(act === 'info') showServerInfo(id, s);
     else if(act === 'users') openServerUsersPanel(id, s);
     else if(act === 'email') openMailModal(s.name || '');
-    else if(act === 'add') openServerUsersPanel(id, s).then(() => { document.getElementById('addUserHeading').scrollIntoView({ behavior: 'smooth' }); addUserEmail.focus({ preventScroll: true }); });
+    else if(act === 'add') openServerUsersPanel(id, s).then(() => { if(window.xtShowAddUser) window.xtShowAddUser(true); });
     else if(act === 'remove') openServerUsersPanel(id, s).then(() => { serverUsersOverlay.scrollTop = 0; });
     else if(act === 'rename'){
       const name = prompt('Rename server to:', s.name || '');
@@ -1277,6 +1277,7 @@
     manageServersOverlay.classList.remove('show');
     document.getElementById('serverControlOverlay').classList.remove('show');
     serverUsersOverlay.classList.add('show');
+    document.getElementById('addUserOverlay').classList.remove('show');
     serverUsersName.textContent = pendingServerName;
 
     addUserEmail.value = '';
@@ -1439,6 +1440,7 @@
       addUserNetworkLimit.value = '';
       setTimeout(() => { label.textContent = 'Add User'; }, 900);
       refreshServerUsersList();
+      if(window.xtShowAddUser) window.xtShowAddUser(false);
     }catch(err){
       addUserError.textContent = 'Could not reach the backend -- is notify_login.py running?';
       addUserError.classList.add('show');
@@ -3580,7 +3582,7 @@
   const MC_ONLY = ['config','plugins','members','worlds'];
   const isMc = () => window.mcCtx !== false;
   const visPerms = () => isMc() ? PERMS : PERMS.filter(([k]) => !MC_ONLY.includes(k));
-  const aStatus = (m, err) => { $('accStatus').textContent = m || ''; $('accStatus').classList.toggle('err', !!err); };
+  const aStatus = (m, err) => { ['accStatus','accStatus2'].forEach(id => { $(id).textContent = m || ''; $(id).classList.toggle('err', !!err); }); };
   function renderPerms(){
     const box = $('accPerms');
     box.replaceChildren();
@@ -3601,7 +3603,7 @@
   function resetForm(){
     $('accEmail').value = ''; $('accPass').value = ''; $('accEmail').readOnly = false;
     $('accCpu').value = $('accRam').value = $('accDisk').value = ''; $('accExpiry').value = '';
-    $('accFormTitle').textContent = 'Add member';
+    $('accFormTitle').textContent = 'Add Member';
     ac.full = isMc();
     ac.perms = { start:true, stop:true, restart:true, console:true, files:true };
     paintSpecs();
@@ -3610,14 +3612,14 @@
   const dayOf = t => { if(!t) return ''; const d = new Date(t); return isNaN(d) ? '' : d.toISOString().slice(0, 10); };
   function editUser(u){
     $('accEmail').value = u.email; $('accEmail').readOnly = true; $('accPass').value = '';
-    $('accFormTitle').textContent = 'Edit member';
+    $('accFormTitle').textContent = 'Edit Member';
     ac.full = isMc() ? true : !!u.fullAccess;
     $('accCpu').value = u.cpuLimit || ''; $('accRam').value = u.ramLimit || ''; $('accDisk').value = u.storageLimit || '';
     $('accExpiry').value = dayOf(u.expiryTimestamp);
     ac.perms = {}; PERMS.forEach(([k]) => { ac.perms[k] = !u.perms || !!u.perms[k]; });
     paintSpecs();
     renderPerms();
-    $('accFormTitle').scrollIntoView({ behavior:'smooth', block:'start' });
+    if(window.xtShowAddMember) window.xtShowAddMember(true);
   }
   async function removeUser(u){
     if(!confirm(`Remove access for ${u.email}?`)) return;
@@ -3646,10 +3648,12 @@
       await api('/assign_server_access', { email, password:$('accPass').value, fullAccess:full, perms, cpuLimit: full || !document.body.classList.contains('role-admin') ? null : $('accCpu').value, ramLimit: full || !document.body.classList.contains('role-admin') ? null : $('accRam').value, storageLimit: full || !document.body.classList.contains('role-admin') ? null : $('accDisk').value, expiry: $('accExpiry').value || null });
       resetForm();
       await loadUsers();
+      if(window.xtShowAddMember) window.xtShowAddMember(false);
       aStatus('Saved.');
     }catch(e){ aStatus(e.message, true); }
   });
   $('accReset').addEventListener('click', resetForm);
+  window.xtAccReset = resetForm;
   $('navAccess').addEventListener('click', () => {
     open('accessOverlay');
     resetForm();

@@ -88,7 +88,7 @@
     });
   }
 
-  const OWN = ['panelsOverlay','serverTypeOverlay','resourceTypeOverlay','addServerOverlay','removeServerOverlay'];
+  const OWN = ['panelsOverlay','serverTypeOverlay','resourceTypeOverlay','addServerOverlay','removeServerOverlay','addUserOverlay','addMemberOverlay'];
   const hideOwn = () => OWN.forEach(o => { const e = $(o); if(e) e.classList.remove('show'); });
 
   $('adminSidebar').addEventListener('click', e => {
@@ -348,6 +348,13 @@
 
   $('credSelect').addEventListener('change', () => { credEdit = false; drawCreds(); });
   $('adminSidebar').addEventListener('click', e => { if(e.target.closest('#navPanels')){ credEdit = false; loadCreds(); } }, true);
+
+  window.xtShowAddUser = on => { $('addUserOverlay').classList.toggle('show', !!on); $('serverUsersOverlay').classList.toggle('show', !on); if(on) $('addUserEmail').focus({ preventScroll:true }); };
+  window.xtShowAddMember = on => { $('addMemberOverlay').classList.toggle('show', !!on); $('accessOverlay').classList.toggle('show', !on); };
+  $('addUserOpen').addEventListener('click', () => window.xtShowAddUser(true));
+  $('addUserBack').addEventListener('click', () => window.xtShowAddUser(false));
+  $('mbAdd').addEventListener('click', () => { if(window.xtAccReset) window.xtAccReset(); window.xtShowAddMember(true); });
+  $('amBack').addEventListener('click', () => { if(window.xtAccReset) window.xtAccReset(); window.xtShowAddMember(false); });
 
   fillLocations();
   $('panelSelect').value = cur;
