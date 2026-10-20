@@ -35,6 +35,7 @@
   </nav>
   <section id="doc-start"><h2>Getting started</h2>
     <p>Base URL: <code class="doc-base">https://YOUR-BACKEND</code></p>
+    <p class="doc-note">This is your backend link (the one saved under Backend link in Manage Servers), not the website address. The website only serves the panel pages and cannot accept API requests.</p>
     <ol class="doc-ol"><li>Open the API panel and press <b>Generate key</b>. Copy the key now, it is shown once.</li><li>Find your server's <code>docId</code>. It is the ID in the panel URL, for example <code>/&lt;docId&gt;/console</code>.</li><li>Send a <code>POST</code> request with a JSON body and the <code>X-API-Key</code> header.</li></ol>
     <div class="doc-code"><button type="button" class="doc-copy">Copy</button><pre><code>curl -X POST https://YOUR-BACKEND/server_power \
   -H &quot;X-API-Key: xtech12345678901&quot; \

@@ -358,14 +358,22 @@
   window.xtShowAddUser = on => { $('addUserOverlay').classList.toggle('show', !!on); $('serverUsersOverlay').classList.toggle('show', !on); if(on) $('addUserEmail').focus({ preventScroll:true }); };
   $('addUserBack').addEventListener('click', () => window.xtShowAddUser(false));
 
-  $('apDocsOpen').addEventListener('click', () => { $('apiDocsOverlay').classList.add('show'); $('apiDocsOverlay').scrollTop = 0; });
+  const paintBase = () => document.querySelectorAll('#apiDocsOverlay .doc-base').forEach(n => { n.textContent = API_BASE; });
+  $('apDocsOpen').addEventListener('click', () => { $('apiOverlay').classList.remove('show'); paintBase(); $('apiDocsOverlay').classList.add('show'); $('apiDocsOverlay').scrollTop = 0; });
   $('apDocsBack').addEventListener('click', () => { $('apiDocsOverlay').classList.remove('show'); $('apiOverlay').classList.add('show'); });
   $('apiDocsOverlay').addEventListener('click', async e => {
     const b = e.target.closest('.doc-copy'); if(!b) return;
-    const t = b.parentElement.querySelector('code').textContent.replace(/https:\/\/YOUR-BACKEND/g, API_BASE || 'https://YOUR-BACKEND');
+    const t = b.parentElement.querySelector('code').textContent.replace(/https:\/\/YOUR-BACKEND/g, API_BASE);
     try{ await navigator.clipboard.writeText(t); b.textContent = 'Copied'; setTimeout(() => { b.textContent = 'Copy'; }, 900); }catch(_){}
   });
-  document.querySelectorAll('#apiDocsOverlay .doc-base').forEach(n => { n.textContent = API_BASE || 'https://YOUR-BACKEND'; });
+
+  const views = [...document.querySelectorAll('.manage-view')];
+  new MutationObserver(recs => {
+    let win = null;
+    recs.forEach(r => { const t = r.target; if(t.classList && t.classList.contains('manage-view') && t.classList.contains('show') && !(r.oldValue || '').split(/\s+/).includes('show')) win = t; });
+    if(win) views.forEach(v => { if(v !== win) v.classList.remove('show'); });
+  }).observe(document.getElementById('pages'), { attributes:true, attributeFilter:['class'], attributeOldValue:true, subtree:true });
+  views.filter(v => v.classList.contains('show')).slice(0, -1).forEach(v => v.classList.remove('show'));
 
   fillLocations();
   $('panelSelect').value = cur;
