@@ -1,8 +1,10 @@
 <div class="manage-view" id="accessOverlay">
-  <div class="pn-form">
-  <h1 class="heading" id="accFormTitle" style="text-align:left; justify-content:flex-start;">Add Members</h1>
+  <h1 class="heading" style="text-align:left; justify-content:flex-start;">Members</h1>
   <p class="subtext" style="text-align:left; margin-bottom:16px;">Give someone a login to this server and choose what they can do.</p>
   <div class="plg-status" id="accStatus"></div>
+  <p class="mm-sub">Members with access</p>
+  <div class="mm-grid" id="accList" style="margin-bottom:26px;"></div>
+  <p class="mm-sub" id="accFormTitle">Add member</p>
   <div class="field"><label for="accEmail">Email</label><input type="email" id="accEmail" placeholder="someone@example.com" autocomplete="off"></div>
   <div class="field" style="margin-top:14px;"><label for="accPass">Password</label><input type="password" id="accPass" placeholder="Leave blank to keep the existing password" autocomplete="new-password"></div>
   <div id="accSpecs" style="display:none;">
@@ -19,5 +21,5 @@
     <button type="button" class="plg-btn" id="accSave">Save member</button>
     <button type="button" class="plg-btn" id="accReset">Clear</button>
   </div>
-  </div>
 </div>
+
