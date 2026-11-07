@@ -154,6 +154,8 @@
   });
 
   function showLoginForm(){
+    document.querySelectorAll('.manage-view.show, .modal-overlay.show, .fm-editor-overlay.show').forEach(el => el.classList.remove('show'));
+    try{ hideAllScreens(); }catch(e){}
     loginView.style.display = '';
     loggedInView.classList.remove('show');
     adminView.style.display = 'none';
