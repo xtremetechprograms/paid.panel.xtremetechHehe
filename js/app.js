@@ -369,7 +369,7 @@
   if(document.getElementById('navAddServer')) document.getElementById('navAddServer').addEventListener('click', () => openServerTypeSelector('add'));
   document.getElementById('addServerClose').addEventListener('click', closeAddServerModal);
   addServerOverlay.addEventListener('click', (e) => {
-    if(e.target === addServerOverlay) closeAddServerModal();
+    if(false && e.target === addServerOverlay) closeAddServerModal();
   });
 
   // ---------------------------------------------------------------
@@ -385,6 +385,7 @@
   async function openRemoveServerModal(){
     removeServerOverlay.classList.add('show');
     removeServerList.innerHTML = '<p class="server-list-empty">Loading…</p>';
+    if(window.xtRemovePanel){ window.xtRemovePanel(); return; }
 
     try{
       const snapshot = await db.collection('servers').orderBy('createdAt', 'desc').get();
@@ -424,7 +425,7 @@
   if(document.getElementById('navRemoveServer')) document.getElementById('navRemoveServer').addEventListener('click', () => openServerTypeSelector('remove'));
   document.getElementById('removeServerClose').addEventListener('click', closeRemoveServerModal);
   removeServerOverlay.addEventListener('click', (e) => {
-    if(e.target === removeServerOverlay) closeRemoveServerModal();
+    if(false && e.target === removeServerOverlay) closeRemoveServerModal();
   });
 
   function closeConfirmDelete(){
@@ -443,6 +444,7 @@
       await db.collection('servers').doc(pendingDeleteId).delete();
       closeConfirmDelete();
       closeRemoveServerModal();
+      if(window.xtAfterRemove) window.xtAfterRemove();
       if(manageServersOverlay.classList.contains('show')) openManageServersModal();
       // The persistent list (serverList) updates on its own via the
       // onSnapshot listener already running -- no manual refresh needed.
@@ -520,8 +522,40 @@
     }, 1000);
   }
 
+  async function directPower(signal){
+    const store = (k, v) => { try{ if(v === null) localStorage.removeItem(k); else if(v !== undefined) localStorage.setItem(k, v); return localStorage.getItem(k) || ''; }catch(e){ return ''; } };
+    let key = store('xtPanelKey');
+    if(!key){
+      key = (prompt('Backend is offline. Paste your Pterodactyl client API key to control this server directly (saved only in this browser):') || '').trim();
+      if(!key) return false;
+      store('xtPanelKey', key);
+    }
+    const snap = await db.collection('servers').doc(pendingControlDoc).get();
+    const uuid = snap.exists ? (snap.data().uuid || '') : '';
+    if(!uuid) throw new Error('Server UUID not found');
+    const base = (store('xtPanelUrl') || 'https://panel.madflex.dpdns.org').replace(/\/+$/, '');
+    let res;
+    try{
+      res = await fetch(base + '/api/client/servers/' + encodeURIComponent(uuid) + '/power', {
+        method: 'POST',
+        headers: { 'Authorization': 'Bearer ' + key, 'Accept': 'Application/vnd.pterodactyl.v1+json', 'Content-Type': 'application/json' },
+        body: JSON.stringify({ signal })
+      });
+    }catch(e){
+      throw new Error('Panel blocked the browser request, start the server from the panel once');
+    }
+    if(res.status === 401 || res.status === 403){
+      store('xtPanelKey', null);
+      throw new Error('Panel rejected the API key, it was cleared, try again');
+    }
+    if(!res.ok) throw new Error('Panel returned HTTP ' + res.status);
+    return true;
+  }
+
   async function sendPower(signal, btn){
     if(!pendingControlDoc || btn.dataset.busy) return;
+    const cur = (document.getElementById('serverState') || {}).dataset;
+    if(signal === 'start' && cur && (cur.state === 'running' || cur.state === 'starting')) return;
     btn.dataset.busy = '1';
     btn.style.opacity = '0.6';
     termLine(PWR_LINE[signal] || '');
@@ -546,13 +580,29 @@
         burstRefresh();
       }
     }catch(err){
-      termLine('\u001b[91m[✖] Cannot reach the backend, check your connection\u001b[0m');
-      stateHold = 0;
+      termLine('\u001b[93m[!] Backend is offline, sending the signal directly to the panel\u001b[0m');
+      try{
+        const done = await directPower(signal);
+        if(done){
+          termLine('\u001b[92m[✔] Signal sent directly to the panel\u001b[0m');
+          setState(signal === 'stop' || signal === 'kill' ? 'stopping' : 'starting', 8000);
+        }else{
+          termLine('\u001b[91m[✖] Cannot reach the backend, check your connection\u001b[0m');
+          stateHold = 0;
+        }
+      }catch(e2){
+        termLine('\u001b[91m[✖] ' + (e2 && e2.message ? e2.message : 'Direct power failed') + '\u001b[0m');
+        stateHold = 0;
+      }
     }finally{
       btn.style.opacity = '';
       setTimeout(() => { delete btn.dataset.busy; }, 600);
     }
   }
+  const fmtUptime = ms => {
+    const t = Math.floor(ms / 1000), d = Math.floor(t / 86400), h = Math.floor(t % 86400 / 3600), m = Math.floor(t % 3600 / 60), sec = t % 60;
+    return d ? `${d}d ${h}h` : h ? `${h}h ${m}m` : m ? `${m}m ${sec}s` : `${sec}s`;
+  };
   document.getElementById('pwrStart').addEventListener('click', (e) => sendPower('start', e.currentTarget));
   document.getElementById('pwrRestart').addEventListener('click', (e) => sendPower('restart', e.currentTarget));
   document.getElementById('pwrStop').addEventListener('click', (e) => sendPower('stop', e.currentTarget));
@@ -643,10 +693,11 @@
       const d = data.dedicated;
       setState(d ? d.state : r.current_state);
       document.getElementById('infoAddress').textContent = data.address || '—';
-      document.getElementById('infoUptime').textContent = r.uptime ? Math.floor(r.uptime/60000) + 'm' : '—';
+      document.getElementById('infoUptime').textContent = r.uptime ? fmtUptime(r.uptime) : '—';
       document.getElementById('infoCpu').textContent = (r.cpu_absolute ?? '—') + '%';
       const pl = data.panel_limits || {};
-      const usage = (usedMb, limMb) => fmtMB(usedMb) + ' / ' + (limMb ? fmtMB(limMb) : 'Unlimited');
+      const down = !!data.panel_unreachable && !data.dedicated;
+      const usage = (usedMb, limMb) => down ? '—' : fmtMB(usedMb) + ' / ' + (limMb ? fmtMB(limMb) : 'Unlimited');
       document.getElementById('infoMemory').textContent = usage((r.memory_bytes || 0)/1048576, pl.mem_mb);
       document.getElementById('infoDisk').textContent = usage((r.disk_bytes || 0)/1048576, pl.disk_mb);
       document.getElementById('infoNetIn').textContent = r.network_rx_bytes ? (r.network_rx_bytes/1048576).toFixed(1) + 'MB' : '—';
@@ -658,14 +709,16 @@
         document.getElementById('infoMemory').textContent = usage(d.mem_used_mb || 0, d.mem_limit_mb || pl.mem_mb);
         document.getElementById('infoDisk').textContent = usage(d.disk_used_mb || 0, d.disk_limit_mb || pl.disk_mb);
         document.getElementById('infoAddress').textContent = d.state === 'running' ? 'Running' : 'Offline';
-        document.getElementById('infoUptime').textContent = d.state === 'running' ? Math.floor((d.uptime_ms||0)/60000) + 'm' : '—';
+        document.getElementById('infoUptime').textContent = d.state === 'running' ? fmtUptime(d.uptime_ms || 0) : '—';
       }
 
       pushGraphPoint('cpu', r.cpu_absolute || 0, (data.limits && data.limits.cpuLimit) || pl.cpu || null);
       pushGraphPoint('memory', r.memory_bytes ? r.memory_bytes/1048576 : 0, (data.limits && data.limits.ramLimit) || pl.mem_mb || null);
       pushNetworkPoint((r.network_rx_bytes||0)/1048576, (r.network_tx_bytes||0)/1048576);
       updateScaleLabels(data.limits || {});
-    }catch(err){}
+    }catch(err){
+      ['infoMemory','infoDisk'].forEach(id => { const el = document.getElementById(id); if(el) el.textContent = '—'; });
+    }
   }
 
   // Left-side up/middle/low labels on each graph box, always tracking
@@ -907,18 +960,28 @@
 
   document.getElementById('terminalInput').addEventListener('keydown', async (e) => {
     if(e.key !== 'Enter') return;
-    const cmd = e.target.value.trim();
+    const input = e.target;
+    let cmd = input.value.trim();
+    if(pendingControlCategory === 'minecraft') cmd = cmd.replace(/^\/+/, '').trim();
     if(!cmd || !pendingControlDoc) return;
-    e.target.value = '';
+    input.value = '';
+    termLine('\u001b[90m> ' + cmd + '\u001b[0m');
     try{
       const idToken = await auth.currentUser.getIdToken();
-      await fetch(`${API_BASE}/server_command`, {
+      const res = await fetch(`${API_BASE}/server_command`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ idToken, docId: pendingControlDoc, command: cmd })
       });
+      if(!res.ok){
+        const data = await res.json().catch(() => ({}));
+        termLine('\u001b[91m[✖] ' + (res.status === 502 ? 'Command failed. Is the server running?' : PWR_ERR[res.status] || data.error || 'Command failed') + '\u001b[0m');
+        return;
+      }
       setTimeout(refreshTerminal, 800);
-    }catch(err){}
+    }catch(err){
+      termLine('\u001b[91m[✖] Could not reach the backend\u001b[0m');
+    }
   });
 
 
@@ -1009,15 +1072,49 @@
         const b = add(o.textContent, 'pick', menuCtx.s.backgroundUrl === o.value ? 'cur' : '');
         b.dataset.url = o.value;
       });
+    }else if(view === 'postpone'){
+      add('← Back', 'back');
+      POSTPONE_OPTS.forEach(([label, n]) => { add(label, 'postpone', '').dataset.days = n; });
+      add('Custom date…', 'postponeCustom');
     }else{
       add('Info', 'info');
       add('Show current users', 'users');
       add('Add member', 'add');
+      add('Send email', 'email');
       add('Remove Member', 'remove');
       add('Rename', 'rename');
       add('Delete Server', 'delete', 'danger');
       add('Change theme', 'theme');
+      add('Postpone expiry', 'postponeMenu');
     }
+  }
+
+  const POSTPONE_OPTS = [['+1 day', 1], ['+3 days', 3], ['+7 days', 7], ['+14 days', 14], ['+30 days', 30], ['+90 days', 90]];
+  const fmtExpiry = d => `${String(d.getDate()).padStart(2, '0')} ${MONTH_NAMES[d.getMonth()]} ${d.getFullYear()}`;
+  const currentExpiry = s => {
+    if(s.expiryTimestamp && s.expiryTimestamp.toDate) return s.expiryTimestamp.toDate();
+    const m = /^(\d{1,2}) (\w+) (\d{4})$/.exec(s.expiry || '');
+    const mi = m ? MONTH_NAMES.indexOf(m[2]) : -1;
+    return mi < 0 ? null : new Date(+m[3], mi, +m[1]);
+  };
+  function setExpiry(id, s, date){
+    updateServerDoc(id, { expiry: fmtExpiry(date), expiryTimestamp: firebase.firestore.Timestamp.fromDate(date), reminderSent: false });
+  }
+  function postponeServer(id, s, days){
+    const cur = currentExpiry(s) || new Date();
+    setExpiry(id, s, new Date(cur.getFullYear(), cur.getMonth(), cur.getDate() + days));
+  }
+  function postponeCustom(id, s){
+    const cur = currentExpiry(s);
+    const v = prompt('New expiry date (YYYY-MM-DD):', cur ? `${cur.getFullYear()}-${String(cur.getMonth() + 1).padStart(2, '0')}-${String(cur.getDate()).padStart(2, '0')}` : '');
+    if(!v) return;
+    const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(v.trim());
+    const d = m && new Date(+m[1], +m[2] - 1, +m[3]);
+    if(!d || d.getMonth() !== +m[2] - 1 || d.getDate() !== +m[3]){ alert('Enter a valid date as YYYY-MM-DD.'); return; }
+    const today = new Date(); today.setHours(0, 0, 0, 0);
+    if(d <= today){ alert('Pick a date in the future.'); return; }
+    if(cur && d <= cur){ alert('Pick a date after the current expiry (' + fmtExpiry(cur) + ').'); return; }
+    setExpiry(id, s, d);
   }
 
   function showServerInfo(id, s){
@@ -1055,12 +1152,16 @@
     const { id, s } = menuCtx;
     const act = b.dataset.act;
     if(act === 'theme'){ paintSrvMenu('theme'); placeSrvMenu(); return; }
+    if(act === 'postponeMenu'){ paintSrvMenu('postpone'); placeSrvMenu(); return; }
     if(act === 'back'){ paintSrvMenu('main'); placeSrvMenu(); return; }
     closeSrvMenu();
+    if(act === 'postpone'){ postponeServer(id, s, +b.dataset.days); return; }
+    if(act === 'postponeCustom'){ postponeCustom(id, s); return; }
     if(act === 'pick'){ updateServerDoc(id, { backgroundUrl: b.dataset.url }); return; }
     if(act === 'info') showServerInfo(id, s);
     else if(act === 'users') openServerUsersPanel(id, s);
-    else if(act === 'add') openServerUsersPanel(id, s).then(() => { document.getElementById('addUserHeading').scrollIntoView({ behavior: 'smooth' }); addUserEmail.focus({ preventScroll: true }); });
+    else if(act === 'email') openMailModal(s.name || '');
+    else if(act === 'add') openServerUsersPanel(id, s).then(() => { if(window.xtShowAddUser) window.xtShowAddUser(true); });
     else if(act === 'remove') openServerUsersPanel(id, s).then(() => { serverUsersOverlay.scrollTop = 0; });
     else if(act === 'rename'){
       const name = prompt('Rename server to:', s.name || '');
@@ -1159,6 +1260,55 @@
     }
   }
 
+  const mailOv = document.getElementById('adminMailOverlay');
+  const mailStatus = document.getElementById('mailStatus');
+  const mailF = id => document.getElementById(id);
+  function openMailModal(serverName){
+    mailF('mailTo').value = '';
+    mailF('mailSubject').value = serverName ? 'Your server ' + serverName + ' is ready' : '';
+    mailF('mailMessage').value = '';
+    mailF('mailBtnLabel').value = 'Open Panel';
+    mailF('mailBtnUrl').value = location.origin;
+    mailF('mailServer').value = serverName;
+    mailStatus.textContent = '';
+    mailStatus.classList.remove('err');
+    mailOv.classList.add('show');
+    mailF('mailTo').focus();
+  }
+  mailF('adminMailBtn').addEventListener('click', () => openMailModal(''));
+  mailF('mailClose').addEventListener('click', () => mailOv.classList.remove('show'));
+  mailOv.addEventListener('click', (e) => { if(e.target === mailOv) mailOv.classList.remove('show'); });
+  mailF('mailSend').addEventListener('click', async () => {
+    const say = (m, err) => { mailStatus.textContent = m; mailStatus.classList.toggle('err', !!err); };
+    const to = mailF('mailTo').value.trim();
+    if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(to)){ say('Enter a valid email.', true); return; }
+    const btn = mailF('mailSend');
+    btn.disabled = true;
+    say('Sending…');
+    try{
+      const idToken = await auth.currentUser.getIdToken();
+      const res = await fetch(`${API_BASE}/admin_send_email`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          idToken, to,
+          subject: mailF('mailSubject').value.trim(),
+          message: mailF('mailMessage').value.trim(),
+          buttonLabel: mailF('mailBtnLabel').value.trim(),
+          buttonUrl: mailF('mailBtnUrl').value.trim(),
+          serverName: mailF('mailServer').value
+        })
+      });
+      const data = await res.json().catch(() => ({}));
+      if(!res.ok || !data.ok) throw new Error(data.error || 'HTTP ' + res.status);
+      say('Email sent.');
+    }catch(err){
+      say(err.message || 'Could not send.', true);
+    }finally{
+      btn.disabled = false;
+    }
+  });
+
   if(document.getElementById('navManageServers')) document.getElementById('navManageServers').addEventListener('click', openManageServersModal);
 
 
@@ -1175,7 +1325,9 @@
     pendingServerName = serverData.name || 'Unnamed server';
 
     manageServersOverlay.classList.remove('show');
+    document.getElementById('serverControlOverlay').classList.remove('show');
     serverUsersOverlay.classList.add('show');
+    document.getElementById('addUserOverlay').classList.remove('show');
     serverUsersName.textContent = pendingServerName;
 
     addUserEmail.value = '';
@@ -1187,11 +1339,13 @@
     addUserNetworkLimit.value = '';
     addUserFullAccess.checked = false;
     addUserError.classList.remove('show');
+    paintUserLimitsAccess();
 
     await refreshServerUsersList();
   }
 
   async function refreshServerUsersList(){
+    if(window.xtUsersLoad) return window.xtUsersLoad(pendingServerDocId);
     serverUsersList.innerHTML = '<p class="server-list-empty">Loading…</p>';
     try{
       const idToken = await auth.currentUser.getIdToken();
@@ -1260,6 +1414,19 @@
     btn.textContent = isPw ? 'hide' : 'show';
   });
 
+  const isAdminUser = () => document.body.classList.contains('role-admin');
+  function paintUserLimitsAccess(){
+    const row = addUserCpuLimit.closest('.duration-row');
+    if(row) row.style.display = isAdminUser() ? '' : 'none';
+  }
+
+  document.getElementById('navUsers').addEventListener('click', () => {
+    if(!pendingControlDoc) return;
+    const row = (typeof manageData !== 'undefined' && manageData.find(x => x.id === pendingControlDoc));
+    const nameEl = document.getElementById('serverControlName');
+    openServerUsersPanel(pendingControlDoc, { name: (row && row.s.name) || (nameEl && nameEl.textContent) || 'Server' });
+  });
+
   addUserSaveBtn.addEventListener('click', async () => {
     if(!pendingServerDocId) return;
 
@@ -1298,10 +1465,10 @@
           docId: pendingServerDocId,
           email,
           password,
-          cpuLimit: cpuLimit ? Number(cpuLimit) : null,
-          ramLimit: ramLimit ? Number(ramLimit) : null,
-          storageLimit: storageLimit ? Number(storageLimit) : null,
-          networkLimit: networkLimit ? Number(networkLimit) : null,
+          cpuLimit: isAdminUser() && cpuLimit ? Number(cpuLimit) : null,
+          ramLimit: isAdminUser() && ramLimit ? Number(ramLimit) : null,
+          storageLimit: isAdminUser() && storageLimit ? Number(storageLimit) : null,
+          networkLimit: isAdminUser() && networkLimit ? Number(networkLimit) : null,
           fullAccess: addUserFullAccess.checked
         })
       });
@@ -1324,6 +1491,7 @@
       addUserNetworkLimit.value = '';
       setTimeout(() => { label.textContent = 'Add User'; }, 900);
       refreshServerUsersList();
+      if(window.xtShowAddUser) window.xtShowAddUser(false);
     }catch(err){
       addUserError.textContent = 'Could not reach the backend -- is notify_login.py running?';
       addUserError.classList.add('show');
@@ -1403,6 +1571,16 @@
   }
 
   function renderServerList(snapshot){
+    window.XT_LAST_SNAP = snapshot;
+    window.XT_DOCS = window.XT_DOCS || {};
+    if(document.body.classList.contains('role-admin')){
+      const P = window.XT_PANEL || 'pterodactyl';
+      const keep = [];
+      snapshot.forEach(d => { const x = d.data(); window.XT_DOCS[d.id] = x; if((x.panel || 'pterodactyl') === P) keep.push(d); });
+      snapshot = { empty: !keep.length, forEach: cb => keep.forEach(cb) };
+    }else{
+      snapshot.forEach(d => { window.XT_DOCS[d.id] = d.data(); });
+    }
     if(snapshot.empty){
       serverList.innerHTML = '<p class="server-list-empty">No servers yet.</p>';
       return;
@@ -1650,6 +1828,8 @@
         uuid,
         type: SERVER_KINDS[pendingCategory].type,
         category: pendingCategory,
+        panel: window.XT_PANEL || 'pterodactyl',
+        location: (document.getElementById('serverLocation') || {}).value || '',
         createdAt: firebase.firestore.FieldValue.serverTimestamp()
       });
       let note = '';
@@ -2212,15 +2392,6 @@
       catch(e){ prompt('Copy this link (expires in about 15 minutes):', data.url); }
     }
 
-    async function deleteSelected(){
-      if(selected.size === 0) return;
-      if(!confirm(`Delete ${selected.size} selected item(s)?`)) return;
-      const data = await fmApi('delete_files', { path: currentPath, names: [...selected] });
-      if(!data.ok) alert(data.error || 'Could not delete the selected items.');
-      selected.clear();
-      render();
-    }
-
     // -- Editor --
     function buildLangMenu(){
       fmLangMenu.innerHTML = '';
@@ -2240,8 +2411,9 @@
 
     let gutterCount = 0;
     function syncHighlight(){
-      fmEditorHighlight.innerHTML = highlightCode(fmEditorTextarea.value);
-      const n = fmEditorTextarea.value.split('\n').length;
+      const v = fmEditorTextarea.value;
+      fmEditorHighlight.innerHTML = highlightCode(v) + (v.endsWith('\n') ? '\u200b' : '');
+      const n = v.split('\n').length;
       if(n !== gutterCount){
         gutterCount = n;
         let s = '1';
@@ -2250,11 +2422,29 @@
       }
       fmEditorGutter.scrollTop = fmEditorTextarea.scrollTop;
     }
-    fmEditorTextarea.addEventListener('input', syncHighlight);
+    let typingTimer = 0;
+    const retrigger = cls => {
+      fmEditorHighlight.classList.remove(cls);
+      void fmEditorHighlight.offsetWidth;
+      fmEditorHighlight.classList.add(cls);
+    };
+    fmEditorHighlight.addEventListener('animationend', () => fmEditorHighlight.classList.remove('pasting'));
+    fmEditorTextarea.addEventListener('input', e => {
+      syncHighlight();
+      if(e.inputType === 'insertFromPaste' || e.inputType === 'insertFromDrop'){
+        fmEditorHighlight.classList.remove('typing');
+        retrigger('pasting');
+        return;
+      }
+      fmEditorHighlight.classList.add('typing');
+      clearTimeout(typingTimer);
+      typingTimer = setTimeout(() => fmEditorHighlight.classList.remove('typing'), 110);
+    });
     fmEditorTextarea.addEventListener('scroll', () => {
-      fmEditorHighlight.scrollTop = fmEditorTextarea.scrollTop;
-      fmEditorGutter.scrollTop = fmEditorTextarea.scrollTop;
-      fmEditorHighlight.scrollLeft = fmEditorTextarea.scrollLeft;
+      const t = fmEditorTextarea.scrollTop, l = fmEditorTextarea.scrollLeft;
+      fmEditorHighlight.scrollTop = t;
+      fmEditorGutter.scrollTop = t;
+      fmEditorHighlight.scrollLeft = l;
     });
 
     async function openEditor(item){
@@ -3468,53 +3658,25 @@
   function paintSpecs(){
     $('accSpecs').style.display = isMc() ? 'none' : '';
     $('accFull').classList.toggle('on', ac.full);
-    $('accLimits').style.display = ac.full ? 'none' : '';
+    $('accLimits').style.display = ac.full || !document.body.classList.contains('role-admin') ? 'none' : '';
   }
   $('accFull').addEventListener('click', () => { ac.full = !ac.full; paintSpecs(); });
   function resetForm(){
     $('accEmail').value = ''; $('accPass').value = ''; $('accEmail').readOnly = false;
     $('accCpu').value = $('accRam').value = $('accDisk').value = ''; $('accExpiry').value = '';
-    $('accFormTitle').textContent = 'Add member';
+    $('accFormTitle').textContent = 'Add Members';
     ac.full = isMc();
     ac.perms = { start:true, stop:true, restart:true, console:true, files:true };
     paintSpecs();
     renderPerms();
   }
-  const dayOf = t => { if(!t) return ''; const d = new Date(t); return isNaN(d) ? '' : d.toISOString().slice(0, 10); };
-  function renderUsers(){
-    const box = $('accList');
-    box.replaceChildren();
-    ac.users.forEach(u => {
-      const on = visPerms().filter(([k]) => !u.perms || u.perms[k]).length;
-      const specs = u.fullAccess ? 'Whole server' : ['Private folder', u.cpuLimit ? u.cpuLimit + '% CPU' : '', u.ramLimit ? u.ramLimit + ' MB RAM' : '', u.storageLimit ? u.storageLimit + ' MB disk' : ''].filter(Boolean).join(' · ');
-      const c = card(u.email, `${specs} · ${on} of ${visPerms().length} permissions`, 'Remove', 'ip', true);
-      c.classList.add('acc-user');
-      c.querySelector('.mm-ipico').innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="8" r="3.5" stroke="currentColor" stroke-width="1.8"/><path d="M4.5 20c1.4-3.6 4.4-5.5 7.5-5.5s6.1 1.9 7.5 5.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>';
-      c.addEventListener('click', () => {
-        $('accEmail').value = u.email; $('accEmail').readOnly = true; $('accPass').value = '';
-        $('accFormTitle').textContent = 'Edit member';
-        ac.full = isMc() ? true : !!u.fullAccess;
-        $('accCpu').value = u.cpuLimit || ''; $('accRam').value = u.ramLimit || ''; $('accDisk').value = u.storageLimit || '';
-        $('accExpiry').value = dayOf(u.expiryTimestamp);
-        ac.perms = {}; PERMS.forEach(([k]) => { ac.perms[k] = !u.perms || !!u.perms[k]; });
-        paintSpecs();
-        renderPerms();
-      });
-      c.querySelector('button').addEventListener('click', async e => {
-        e.stopPropagation();
-        if(!confirm(`Remove access for ${u.email}?`)) return;
-        try{ await api('/remove_server_access', { email:u.email }); await loadUsers(); }catch(err){ aStatus(err.message, true); }
-      });
-      box.appendChild(c);
-    });
-  }
   async function loadUsers(){
     try{
       const d = await api('/server_access_list', {});
       ac.users = (d.users || []).filter(u => isMc() ? u.fullAccess : true);
+      ac.counts = d.counts || null;
       aStatus('');
     }catch(e){ aStatus(e.message, true); }
-    renderUsers();
   }
   $('accSave').addEventListener('click', async () => {
     const email = $('accEmail').value.trim();
@@ -3524,17 +3686,17 @@
     PERMS.forEach(([k]) => { perms[k] = (isMc() || !MC_ONLY.includes(k)) ? !!ac.perms[k] : false; });
     const full = isMc() ? true : ac.full;
     try{
-      await api('/assign_server_access', { email, password:$('accPass').value, fullAccess:full, perms, cpuLimit: full ? null : $('accCpu').value, ramLimit: full ? null : $('accRam').value, storageLimit: full ? null : $('accDisk').value, expiry: $('accExpiry').value || null });
+      await api('/assign_server_access', { email, password:$('accPass').value, fullAccess:full, perms, cpuLimit: full || !document.body.classList.contains('role-admin') ? null : $('accCpu').value, ramLimit: full || !document.body.classList.contains('role-admin') ? null : $('accRam').value, storageLimit: full || !document.body.classList.contains('role-admin') ? null : $('accDisk').value, expiry: $('accExpiry').value || null });
       resetForm();
       await loadUsers();
       aStatus('Saved.');
     }catch(e){ aStatus(e.message, true); }
   });
   $('accReset').addEventListener('click', resetForm);
+  window.xtAccReset = resetForm;
   $('navAccess').addEventListener('click', () => {
     open('accessOverlay');
     resetForm();
-    renderUsers();
     loadUsers();
   });
 })();
@@ -4064,7 +4226,13 @@
     const hit = index.filter(f => f.path === q || f.name === q);
     if(hit.length === 1) foundBox(hit[0]);
     else if(hit.length > 1) rows(hit);
-    else missBox();
+    else{
+      try{
+        const d = await api('/startup_file_index', { find: q });
+        const f = (d.files || [])[0];
+        if(f){ index.push(f); foundBox(f); } else missBox();
+      }catch(e){ missBox(); }
+    }
   }
 
   async function reload(){
