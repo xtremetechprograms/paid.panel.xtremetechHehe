@@ -502,6 +502,17 @@
   let stateHold = 0;
   let burstTimer = null;
 
+  function fmtUptime(ms){
+    let t = Math.floor((+ms || 0) / 1000);
+    if(t <= 0) return '0s';
+    const d = Math.floor(t / 86400), h = Math.floor(t % 86400 / 3600), m = Math.floor(t % 3600 / 60), sec = t % 60;
+    if(d) return `${d}d ${h}h ${m}m`;
+    if(h) return `${h}h ${m}m`;
+    if(m) return `${m}m ${sec}s`;
+    return `${sec}s`;
+  }
+  window.fmtUptime = fmtUptime;
+
   function setState(state, hold){
     const el = document.getElementById('serverState');
     if(!el || !state) return;
@@ -599,10 +610,6 @@
       setTimeout(() => { delete btn.dataset.busy; }, 600);
     }
   }
-  const fmtUptime = ms => {
-    const t = Math.floor(ms / 1000), d = Math.floor(t / 86400), h = Math.floor(t % 86400 / 3600), m = Math.floor(t % 3600 / 60), sec = t % 60;
-    return d ? `${d}d ${h}h` : h ? `${h}h ${m}m` : m ? `${m}m ${sec}s` : `${sec}s`;
-  };
   document.getElementById('pwrStart').addEventListener('click', (e) => sendPower('start', e.currentTarget));
   document.getElementById('pwrRestart').addEventListener('click', (e) => sendPower('restart', e.currentTarget));
   document.getElementById('pwrStop').addEventListener('click', (e) => sendPower('stop', e.currentTarget));
@@ -709,7 +716,7 @@
         document.getElementById('infoMemory').textContent = usage(d.mem_used_mb || 0, d.mem_limit_mb || pl.mem_mb);
         document.getElementById('infoDisk').textContent = usage(d.disk_used_mb || 0, d.disk_limit_mb || pl.disk_mb);
         document.getElementById('infoAddress').textContent = d.state === 'running' ? 'Running' : 'Offline';
-        document.getElementById('infoUptime').textContent = d.state === 'running' ? fmtUptime(d.uptime_ms || 0) : '—';
+        document.getElementById('infoUptime').textContent = d.state === 'running' ? fmtUptime(d.uptime_ms) : '—';
       }
 
       pushGraphPoint('cpu', r.cpu_absolute || 0, (data.limits && data.limits.cpuLimit) || pl.cpu || null);
@@ -958,14 +965,28 @@
   }
 
 
+  const termHist = []; let termIdx = 0;
+  const termPrint = (t) => {
+    const out = document.getElementById('terminalOutput');
+    out.appendChild(document.createTextNode(t + '\n'));
+    out.scrollTop = out.scrollHeight;
+  };
   document.getElementById('terminalInput').addEventListener('keydown', async (e) => {
+    const el = e.target;
+    if(e.key === 'ArrowUp' || e.key === 'ArrowDown'){
+      if(!termHist.length) return;
+      e.preventDefault();
+      termIdx = Math.min(termHist.length, Math.max(0, termIdx + (e.key === 'ArrowUp' ? -1 : 1)));
+      el.value = termHist[termIdx] || '';
+      return;
+    }
     if(e.key !== 'Enter') return;
-    const input = e.target;
-    let cmd = input.value.trim();
-    if(pendingControlCategory === 'minecraft') cmd = cmd.replace(/^\/+/, '').trim();
+    let cmd = el.value.trim();
+    if(window.mcCtx) cmd = cmd.replace(/^\/+/, '').trim();
     if(!cmd || !pendingControlDoc) return;
-    input.value = '';
-    termLine('\u001b[90m> ' + cmd + '\u001b[0m');
+    el.value = '';
+    if(termHist[termHist.length - 1] !== cmd) termHist.push(cmd);
+    termIdx = termHist.length;
     try{
       const idToken = await auth.currentUser.getIdToken();
       const res = await fetch(`${API_BASE}/server_command`, {
@@ -973,15 +994,15 @@
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ idToken, docId: pendingControlDoc, command: cmd })
       });
-      if(!res.ok){
-        const data = await res.json().catch(() => ({}));
-        termLine('\u001b[91m[✖] ' + (res.status === 502 ? 'Command failed. Is the server running?' : PWR_ERR[res.status] || data.error || 'Command failed') + '\u001b[0m');
+      const data = await res.json().catch(() => ({}));
+      if(!res.ok || data.ok === false){
+        const st = document.getElementById('serverState');
+        const off = st && st.dataset.state !== 'running';
+        termPrint(`[✖] ${off ? 'Server is not running' : (PWR_ERR[res.status] || data.error || 'Command failed')}`);
         return;
       }
       setTimeout(refreshTerminal, 800);
-    }catch(err){
-      termLine('\u001b[91m[✖] Could not reach the backend\u001b[0m');
-    }
+    }catch(err){ termPrint('[✖] Could not reach the backend'); }
   });
 
 
@@ -1072,49 +1093,17 @@
         const b = add(o.textContent, 'pick', menuCtx.s.backgroundUrl === o.value ? 'cur' : '');
         b.dataset.url = o.value;
       });
-    }else if(view === 'postpone'){
-      add('← Back', 'back');
-      POSTPONE_OPTS.forEach(([label, n]) => { add(label, 'postpone', '').dataset.days = n; });
-      add('Custom date…', 'postponeCustom');
     }else{
       add('Info', 'info');
       add('Show current users', 'users');
       add('Add member', 'add');
       add('Send email', 'email');
       add('Remove Member', 'remove');
+      add('Postpone expiry', 'postpone');
       add('Rename', 'rename');
       add('Delete Server', 'delete', 'danger');
       add('Change theme', 'theme');
-      add('Postpone expiry', 'postponeMenu');
     }
-  }
-
-  const POSTPONE_OPTS = [['+1 day', 1], ['+3 days', 3], ['+7 days', 7], ['+14 days', 14], ['+30 days', 30], ['+90 days', 90]];
-  const fmtExpiry = d => `${String(d.getDate()).padStart(2, '0')} ${MONTH_NAMES[d.getMonth()]} ${d.getFullYear()}`;
-  const currentExpiry = s => {
-    if(s.expiryTimestamp && s.expiryTimestamp.toDate) return s.expiryTimestamp.toDate();
-    const m = /^(\d{1,2}) (\w+) (\d{4})$/.exec(s.expiry || '');
-    const mi = m ? MONTH_NAMES.indexOf(m[2]) : -1;
-    return mi < 0 ? null : new Date(+m[3], mi, +m[1]);
-  };
-  function setExpiry(id, s, date){
-    updateServerDoc(id, { expiry: fmtExpiry(date), expiryTimestamp: firebase.firestore.Timestamp.fromDate(date), reminderSent: false });
-  }
-  function postponeServer(id, s, days){
-    const cur = currentExpiry(s) || new Date();
-    setExpiry(id, s, new Date(cur.getFullYear(), cur.getMonth(), cur.getDate() + days));
-  }
-  function postponeCustom(id, s){
-    const cur = currentExpiry(s);
-    const v = prompt('New expiry date (YYYY-MM-DD):', cur ? `${cur.getFullYear()}-${String(cur.getMonth() + 1).padStart(2, '0')}-${String(cur.getDate()).padStart(2, '0')}` : '');
-    if(!v) return;
-    const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(v.trim());
-    const d = m && new Date(+m[1], +m[2] - 1, +m[3]);
-    if(!d || d.getMonth() !== +m[2] - 1 || d.getDate() !== +m[3]){ alert('Enter a valid date as YYYY-MM-DD.'); return; }
-    const today = new Date(); today.setHours(0, 0, 0, 0);
-    if(d <= today){ alert('Pick a date in the future.'); return; }
-    if(cur && d <= cur){ alert('Pick a date after the current expiry (' + fmtExpiry(cur) + ').'); return; }
-    setExpiry(id, s, d);
   }
 
   function showServerInfo(id, s){
@@ -1145,6 +1134,41 @@
     }
   }
 
+  const ppOv = document.getElementById('postponeOverlay'), ppBy = document.getElementById('postponeBy'), ppDate = document.getElementById('postponeDate'), ppSt = document.getElementById('postponeStatus');
+  let ppCtx = null;
+  const iso = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  function baseExpiry(s){
+    const t = s.expiryTimestamp && s.expiryTimestamp.toDate ? s.expiryTimestamp.toDate() : null;
+    const d = t || new Date();
+    return new Date(d.getFullYear(), d.getMonth(), d.getDate());
+  }
+  function openPostpone(id, s){
+    ppCtx = { id, s };
+    ppSt.textContent = ''; ppSt.classList.remove('err');
+    ppBy.value = '7'; ppDate.value = '';
+    document.getElementById('postponeCur').textContent = 'Current expiry: ' + (s.expiry || '—');
+    ppOv.classList.add('show');
+  }
+  ppBy.addEventListener('change', () => { ppDate.value = ''; });
+  ppDate.addEventListener('input', () => { if(ppDate.value) ppBy.selectedIndex = -1; });
+  document.getElementById('postponeClose').addEventListener('click', () => ppOv.classList.remove('show'));
+  ppOv.addEventListener('click', e => { if(e.target === ppOv) ppOv.classList.remove('show'); });
+  document.getElementById('postponeSave').addEventListener('click', async () => {
+    if(!ppCtx) return;
+    const base = baseExpiry(ppCtx.s);
+    let next;
+    if(ppDate.value){ const [y,m,d] = ppDate.value.split('-').map(Number); next = new Date(y, m-1, d); }
+    else if(ppBy.value){ next = new Date(base); next.setDate(next.getDate() + parseInt(ppBy.value, 10)); }
+    if(!next || isNaN(next)){ ppSt.textContent = 'Pick a duration or date.'; ppSt.classList.add('err'); return; }
+    if(next <= base){ ppSt.textContent = 'New date must be after the current expiry.'; ppSt.classList.add('err'); return; }
+    ppOv.classList.remove('show');
+    await updateServerDoc(ppCtx.id, {
+      expiry: `${String(next.getDate()).padStart(2,'0')} ${MONTH_NAMES[next.getMonth()]} ${next.getFullYear()}`,
+      expiryTimestamp: firebase.firestore.Timestamp.fromDate(next),
+      reminderSent: false
+    });
+  });
+
   srvMenu.addEventListener('click', async (e) => {
     e.stopPropagation();
     const b = e.target.closest('button');
@@ -1152,17 +1176,15 @@
     const { id, s } = menuCtx;
     const act = b.dataset.act;
     if(act === 'theme'){ paintSrvMenu('theme'); placeSrvMenu(); return; }
-    if(act === 'postponeMenu'){ paintSrvMenu('postpone'); placeSrvMenu(); return; }
     if(act === 'back'){ paintSrvMenu('main'); placeSrvMenu(); return; }
     closeSrvMenu();
-    if(act === 'postpone'){ postponeServer(id, s, +b.dataset.days); return; }
-    if(act === 'postponeCustom'){ postponeCustom(id, s); return; }
     if(act === 'pick'){ updateServerDoc(id, { backgroundUrl: b.dataset.url }); return; }
     if(act === 'info') showServerInfo(id, s);
     else if(act === 'users') openServerUsersPanel(id, s);
     else if(act === 'email') openMailModal(s.name || '');
     else if(act === 'add') openServerUsersPanel(id, s).then(() => { if(window.xtShowAddUser) window.xtShowAddUser(true); });
     else if(act === 'remove') openServerUsersPanel(id, s).then(() => { serverUsersOverlay.scrollTop = 0; });
+    else if(act === 'postpone') openPostpone(id, s);
     else if(act === 'rename'){
       const name = prompt('Rename server to:', s.name || '');
       if(name && name.trim() && name.trim() !== s.name) updateServerDoc(id, { name: name.trim() });
@@ -2392,6 +2414,15 @@
       catch(e){ prompt('Copy this link (expires in about 15 minutes):', data.url); }
     }
 
+    async function deleteSelected(){
+      if(selected.size === 0) return;
+      if(!confirm(`Delete ${selected.size} selected item(s)?`)) return;
+      const data = await fmApi('delete_files', { path: currentPath, names: [...selected] });
+      if(!data.ok) alert(data.error || 'Could not delete the selected items.');
+      selected.clear();
+      render();
+    }
+
     // -- Editor --
     function buildLangMenu(){
       fmLangMenu.innerHTML = '';
@@ -2411,9 +2442,8 @@
 
     let gutterCount = 0;
     function syncHighlight(){
-      const v = fmEditorTextarea.value;
-      fmEditorHighlight.innerHTML = highlightCode(v) + (v.endsWith('\n') ? '\u200b' : '');
-      const n = v.split('\n').length;
+      fmEditorHighlight.innerHTML = highlightCode(fmEditorTextarea.value);
+      const n = fmEditorTextarea.value.split('\n').length;
       if(n !== gutterCount){
         gutterCount = n;
         let s = '1';
@@ -2422,29 +2452,11 @@
       }
       fmEditorGutter.scrollTop = fmEditorTextarea.scrollTop;
     }
-    let typingTimer = 0;
-    const retrigger = cls => {
-      fmEditorHighlight.classList.remove(cls);
-      void fmEditorHighlight.offsetWidth;
-      fmEditorHighlight.classList.add(cls);
-    };
-    fmEditorHighlight.addEventListener('animationend', () => fmEditorHighlight.classList.remove('pasting'));
-    fmEditorTextarea.addEventListener('input', e => {
-      syncHighlight();
-      if(e.inputType === 'insertFromPaste' || e.inputType === 'insertFromDrop'){
-        fmEditorHighlight.classList.remove('typing');
-        retrigger('pasting');
-        return;
-      }
-      fmEditorHighlight.classList.add('typing');
-      clearTimeout(typingTimer);
-      typingTimer = setTimeout(() => fmEditorHighlight.classList.remove('typing'), 110);
-    });
+    fmEditorTextarea.addEventListener('input', syncHighlight);
     fmEditorTextarea.addEventListener('scroll', () => {
-      const t = fmEditorTextarea.scrollTop, l = fmEditorTextarea.scrollLeft;
-      fmEditorHighlight.scrollTop = t;
-      fmEditorGutter.scrollTop = t;
-      fmEditorHighlight.scrollLeft = l;
+      fmEditorHighlight.scrollTop = fmEditorTextarea.scrollTop;
+      fmEditorGutter.scrollTop = fmEditorTextarea.scrollTop;
+      fmEditorHighlight.scrollLeft = fmEditorTextarea.scrollLeft;
     });
 
     async function openEditor(item){
@@ -3670,6 +3682,24 @@
     paintSpecs();
     renderPerms();
   }
+  const dayOf = t => { if(!t) return ''; const d = new Date(t); return isNaN(d) ? '' : d.toISOString().slice(0, 10); };
+  function editUser(u){
+    $('accEmail').value = u.email; $('accEmail').readOnly = true; $('accPass').value = '';
+    $('accFormTitle').textContent = 'Edit Member';
+    ac.full = isMc() ? true : !!u.fullAccess;
+    $('accCpu').value = u.cpuLimit || ''; $('accRam').value = u.ramLimit || ''; $('accDisk').value = u.storageLimit || '';
+    $('accExpiry').value = dayOf(u.expiryTimestamp);
+    ac.perms = {}; PERMS.forEach(([k]) => { ac.perms[k] = !u.perms || !!u.perms[k]; });
+    paintSpecs();
+    renderPerms();
+  }
+  async function removeUser(u){
+    if(!confirm(`Remove access for ${u.email}?`)) return;
+    try{ await api('/remove_server_access', { email:u.email }); await loadUsers(); }catch(err){ aStatus(err.message, true); }
+  }
+  function renderUsers(){
+    return;
+  }
   async function loadUsers(){
     try{
       const d = await api('/server_access_list', {});
@@ -3677,6 +3707,7 @@
       ac.counts = d.counts || null;
       aStatus('');
     }catch(e){ aStatus(e.message, true); }
+    renderUsers();
   }
   $('accSave').addEventListener('click', async () => {
     const email = $('accEmail').value.trim();
@@ -3697,6 +3728,7 @@
   $('navAccess').addEventListener('click', () => {
     open('accessOverlay');
     resetForm();
+    renderUsers();
     loadUsers();
   });
 })();
