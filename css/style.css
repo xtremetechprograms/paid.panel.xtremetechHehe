@@ -1279,7 +1279,8 @@
   }
   .fm-editor-highlight{ overflow:hidden; }
   .fm-editor-textarea{ scrollbar-width:thin; scrollbar-color:#5a5f6b #0a0b0d; }
-  .fm-editor-textarea::-webkit-scrollbar{ width:10px; height:0; }
+  .fm-editor-textarea::-webkit-scrollbar{ width:10px; height:10px; }
+  .fm-editor-textarea::-webkit-scrollbar-corner{ background:#0a0b0d; }
   .fm-editor-textarea::-webkit-scrollbar-track{ background:#0a0b0d; }
   .fm-editor-textarea::-webkit-scrollbar-thumb{ background:#5a5f6b; border-radius:6px; border:2px solid #0a0b0d; }
   .fm-editor-textarea::-webkit-scrollbar-thumb:hover{ background:#8a909c; }

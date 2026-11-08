@@ -7,7 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/style.css?v=18">
+<link rel="stylesheet" href="css/style.css?v=20">
 <script>
 (function(l){
   var keep = /\.github\.io$/.test(l.hostname) ? 1 : 0;
@@ -324,7 +324,7 @@
   cv.id = 'xtSnow';
   document.body.appendChild(cv);
   const ctx = cv.getContext('2d', { alpha: true });
-  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const reduce = false;
   let W = 0, H = 0, dpr = 1, flakes = [], on = false, raf = 0, last = 0, tick = 0;
 
   const loginVisible = () => {
@@ -407,6 +407,6 @@
   start();
 })();
 </script>
-<script src="js/boot.js?v=18"></script>
+<script src="js/boot.js?v=20"></script>
 </body>
 </html>
