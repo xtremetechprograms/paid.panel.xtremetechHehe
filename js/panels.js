@@ -4,7 +4,7 @@
   const COUNTRIES = [['IN','India'],['US','United States'],['GB','United Kingdom'],['DE','Germany'],['FR','France'],['NL','Netherlands'],['SG','Singapore'],['JP','Japan'],['KR','South Korea'],['AU','Australia'],['CA','Canada'],['BR','Brazil'],['AE','United Arab Emirates'],['SA','Saudi Arabia'],['HK','Hong Kong'],['ID','Indonesia'],['PK','Pakistan'],['BD','Bangladesh'],['LK','Sri Lanka'],['NP','Nepal'],['ES','Spain'],['IT','Italy'],['PL','Poland'],['SE','Sweden'],['FI','Finland'],['NO','Norway'],['CH','Switzerland'],['IE','Ireland'],['RU','Russia'],['TR','Turkey'],['ZA','South Africa'],['MX','Mexico'],['AR','Argentina'],['CL','Chile'],['MY','Malaysia'],['TH','Thailand'],['VN','Vietnam'],['PH','Philippines'],['NZ','New Zealand'],['RO','Romania'],['UA','Ukraine']];
   const CNAME = Object.fromEntries(COUNTRIES);
   const PNAME = { pterodactyl:'Pterodactyl', feather:'Feather Panel' };
-  const pn = p => pn(p) || 'Removed panel';
+  const pn = p => PNAME[p] || 'Removed panel';
   const isExtra = p => typeof p === 'string' && p.startsWith('ptero:');
   const flag = (cc, h) => cc ? `<img class="xt-flag" style="height:${h || 14}px" src="https://flagcdn.com/w40/${esc(String(cc).toLowerCase())}.png" alt="${esc(cc)}" title="${esc(CNAME[String(cc).toUpperCase()] || cc)}" onerror="this.style.display='none'">` : '';
   const shortId = s => (s && (s.identifier || s.shortId || String(s.uuid || '').split('-')[0].slice(0, 8))) || '';
