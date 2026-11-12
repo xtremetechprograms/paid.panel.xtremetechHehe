@@ -121,7 +121,9 @@
     xtBgCache();
     const saved = XT_BG.has && !XT_BG.useDefault && XT_BG.url ? API_BASE + XT_BG.url : '';
     const src = preview || saved;
+    const sb = src ? '' : xtServerBg();
     if(src){ hideVideoBackground(); setBackground(src); }
+    else if(sb){ hideVideoBackground(); setBackground(sb); }
     else if(admin){ hideVideoBackground(); setBackground(ADMIN_BG); }
     else{ showVideoBackground(); }
   }
@@ -484,6 +486,28 @@
   let pendingControlDoc = null;
   let pendingControlCategory = 'discord';
 
+  const MC_BG = 'https://github.com/xtremetechprograms/IMAGES/blob/main/bg.png?raw=true';
+  const DC_BG = 'https://github.com/xtremetechprograms/IMAGES/blob/main/discord.gif?raw=true';
+  const SRV_OVERLAYS = ['serverControlOverlay','filesOverlay','startupOverlay','advOverlay','backupOverlay','dbOverlay','scheduleOverlay','pluginsOverlay','mcConfigOverlay','membersOverlay','accessOverlay','mcBlankOverlay','networkOverlay'];
+  let bgKey = '';
+
+  function xtServerBg(){
+    if(!pendingControlDoc) return '';
+    const shown = id => { const e = document.getElementById(id); return !!e && e.classList.contains('show'); };
+    if(!SRV_OVERLAYS.some(shown) && !(shown('serverUsersOverlay') && pendingServerDocId === pendingControlDoc)) return '';
+    return pendingControlCategory === 'minecraft' ? MC_BG : pendingControlCategory === 'discord' ? DC_BG : '';
+  }
+
+  function bgSync(){
+    const k = xtServerBg();
+    if(k === bgKey) return;
+    bgKey = k;
+    if(auth.currentUser) xtApplyBg();
+  }
+
+  const bgObs = new MutationObserver(() => requestAnimationFrame(bgSync));
+  SRV_OVERLAYS.concat(['serverUsersOverlay']).forEach(id => { const e = document.getElementById(id); if(e) bgObs.observe(e, { attributes: true, attributeFilter: ['class'] }); });
+
   const PWR_LINE = {
     start: '\u001b[92m[▶] Starting server…\u001b[0m',
     restart: '\u001b[93m[↻] Restarting server…\u001b[0m',
@@ -499,7 +523,8 @@
     if(atBottom) out.scrollTop = out.scrollHeight;
   }
 
-  const PWR_ERR = { 401: 'Session expired, sign in again', 403: 'Permission denied', 404: 'Server not found', 409: 'Server is busy, try again in a moment', 422: 'Panel refused the action', 429: 'Too many requests, slow down', 502: 'Panel request failed', 503: 'Host unavailable' };
+  const GENERIC_ERR = 'We are having problem while connecting to your server.';
+  const PWR_ERR = { 401: 'Session expired, sign in again', 403: 'Permission denied', 409: 'Server is busy, try again in a moment', 429: 'Too many requests, slow down' };
   const STATE_UI = { running: ['Online', '#4ade80'], starting: ['Starting', '#facc15'], stopping: ['Stopping', '#fb923c'], offline: ['Offline', '#f87171'] };
   let stateHold = 0;
   let burstTimer = null;
@@ -535,36 +560,6 @@
     }, 1000);
   }
 
-  async function directPower(signal){
-    const store = (k, v) => { try{ if(v === null) localStorage.removeItem(k); else if(v !== undefined) localStorage.setItem(k, v); return localStorage.getItem(k) || ''; }catch(e){ return ''; } };
-    let key = store('xtPanelKey');
-    if(!key){
-      key = (prompt('Backend is offline. Paste your Pterodactyl client API key to control this server directly (saved only in this browser):') || '').trim();
-      if(!key) return false;
-      store('xtPanelKey', key);
-    }
-    const snap = await db.collection('servers').doc(pendingControlDoc).get();
-    const uuid = snap.exists ? (snap.data().uuid || '') : '';
-    if(!uuid) throw new Error('Server UUID not found');
-    const base = (store('xtPanelUrl') || 'https://panel.madflex.dpdns.org').replace(/\/+$/, '');
-    let res;
-    try{
-      res = await fetch(base + '/api/client/servers/' + encodeURIComponent(uuid) + '/power', {
-        method: 'POST',
-        headers: { 'Authorization': 'Bearer ' + key, 'Accept': 'Application/vnd.pterodactyl.v1+json', 'Content-Type': 'application/json' },
-        body: JSON.stringify({ signal })
-      });
-    }catch(e){
-      throw new Error('Panel blocked the browser request, start the server from the panel once');
-    }
-    if(res.status === 401 || res.status === 403){
-      store('xtPanelKey', null);
-      throw new Error('Panel rejected the API key, it was cleared, try again');
-    }
-    if(!res.ok) throw new Error('Panel returned HTTP ' + res.status);
-    return true;
-  }
-
   async function sendPower(signal, btn){
     if(!pendingControlDoc || btn.dataset.busy) return;
     const cur = (document.getElementById('serverState') || {}).dataset;
@@ -585,7 +580,7 @@
       if(!res.ok || !data || data.ok === false){
         const e = String((data && data.error) || res.status || '');
         const code = /^\d+$/.test(e) ? +e : res.status;
-        termLine('\u001b[91m[✖] Power action failed: ' + (PWR_ERR[code] || (/^\d+$/.test(e) ? 'HTTP ' + e : e) || 'unknown error') + '\u001b[0m');
+        termLine('\u001b[91m[✖] ' + (PWR_ERR[code] || (e && !/^\d+$/.test(e) ? e : GENERIC_ERR)) + '\u001b[0m');
         stateHold = 0;
         refreshTerminal();
       }else{
@@ -593,20 +588,8 @@
         burstRefresh();
       }
     }catch(err){
-      termLine('\u001b[93m[!] Backend is offline, sending the signal directly to the panel\u001b[0m');
-      try{
-        const done = await directPower(signal);
-        if(done){
-          termLine('\u001b[92m[✔] Signal sent directly to the panel\u001b[0m');
-          setState(signal === 'stop' || signal === 'kill' ? 'stopping' : 'starting', 8000);
-        }else{
-          termLine('\u001b[91m[✖] Cannot reach the backend, check your connection\u001b[0m');
-          stateHold = 0;
-        }
-      }catch(e2){
-        termLine('\u001b[91m[✖] ' + (e2 && e2.message ? e2.message : 'Direct power failed') + '\u001b[0m');
-        stateHold = 0;
-      }
+      termLine('\u001b[91m[✖] ' + GENERIC_ERR + '\u001b[0m');
+      stateHold = 0;
     }finally{
       btn.style.opacity = '';
       setTimeout(() => { delete btn.dataset.busy; }, 600);
@@ -635,7 +618,7 @@
     drawGraph('network');
   }
 
-  function drawLine(ctx, data, w, h, max, color, fillColor){
+  function drawLine(ctx, data, w, h, max, color, fillColor, glow){
     if(data.length < 2) return;
     ctx.beginPath();
     data.forEach((v, i) => {
@@ -645,7 +628,11 @@
     });
     ctx.strokeStyle = color;
     ctx.lineWidth = 2;
+    ctx.lineJoin = 'round';
+    ctx.shadowColor = glow ? color : 'transparent';
+    ctx.shadowBlur = glow ? 8 : 0;
     ctx.stroke();
+    ctx.shadowBlur = 0;
     if(fillColor){
       ctx.lineTo(w, h);
       ctx.lineTo(0, h);
@@ -667,19 +654,46 @@
     const idMap = { cpu: 'graphCpu', memory: 'graphMemory', network: 'graphNetwork' };
     const canvas = document.getElementById(idMap[key]);
     if(!canvas) return;
+    const w = canvas.clientWidth, h = canvas.clientHeight;
+    if(!w || !h) return;
+    const dpr = window.devicePixelRatio || 1;
+    if(canvas.width !== Math.round(w * dpr) || canvas.height !== Math.round(h * dpr)){
+      canvas.width = Math.round(w * dpr);
+      canvas.height = Math.round(h * dpr);
+    }
     const ctx = canvas.getContext('2d');
-    const w = canvas.width, h = canvas.height;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.clearRect(0, 0, w, h);
     const max = graphMax(key);
     if(key === 'network'){
-      drawLine(ctx, graphHistory.netIn, w, h, max, '#3fa9f5', 'rgba(63,169,245,0.12)');
-      drawLine(ctx, graphHistory.netOut, w, h, max, '#d2691e', 'rgba(210,105,30,0.12)');
+      drawLine(ctx, graphHistory.netIn, w, h, max, '#3fa9f5', 'rgba(63,169,245,0.08)', false);
+      drawLine(ctx, graphHistory.netOut, w, h, max, '#d2691e', 'rgba(210,105,30,0.08)', false);
       return;
     }
-    drawLine(ctx, graphHistory[key], w, h, max, '#e8a33d', 'rgba(232,163,61,0.15)');
+    if(key === 'cpu') drawLine(ctx, graphHistory.cpu, w, h, max, '#bc13fe', 'rgba(188,19,254,0.10)', true);
+    else drawLine(ctx, graphHistory.memory, w, h, max, '#22e06b', 'rgba(34,224,107,0.10)', true);
   }
 
   let logsTimer = null;
+
+  const INFO_IDS = ['infoAddress','infoUptime','infoCpu','infoMemory','infoDisk','infoNetIn','infoNetOut'];
+  let connWarnAt = 0;
+
+  function setInfo(id, text, bad){
+    const el = document.getElementById(id);
+    if(!el) return;
+    el.textContent = text;
+    el.classList.toggle('info-err', !!bad);
+  }
+
+  function infoFail(){
+    INFO_IDS.forEach(id => setInfo(id, 'Error', true));
+    const now = Date.now();
+    if(now - connWarnAt > 60000){
+      connWarnAt = now;
+      termLine('\u001b[91m[✖] ' + GENERIC_ERR + '\u001b[0m');
+    }
+  }
 
   async function refreshTerminal(){
     if(!pendingControlDoc) return;
@@ -691,42 +705,54 @@
         body: JSON.stringify({ idToken, docId: pendingControlDoc })
       });
       const data = await res.json();
-      if(!data.ok) return;
+      if(!data.ok) return infoFail();
 
       const out = document.getElementById('terminalOutput');
       const atBottom = out.scrollHeight - out.scrollTop - out.clientHeight < 40;
-      // logs come from the websocket now, not this poll
       if(atBottom) out.scrollTop = out.scrollHeight;
 
       const r = data.resources || {};
       const d = data.dedicated;
-      setState(d ? d.state : r.current_state);
-      document.getElementById('infoAddress').textContent = data.address || '—';
-      document.getElementById('infoUptime').textContent = r.uptime ? fmtUptime(r.uptime) : '—';
-      document.getElementById('infoCpu').textContent = (r.cpu_absolute ?? '—') + '%';
+      const hasRes = Object.keys(r).length > 0;
       const pl = data.panel_limits || {};
-      const down = !!data.panel_unreachable && !data.dedicated;
-      const usage = (usedMb, limMb) => down ? '—' : fmtMB(usedMb) + ' / ' + (limMb ? fmtMB(limMb) : 'Unlimited');
-      document.getElementById('infoMemory').textContent = usage((r.memory_bytes || 0)/1048576, pl.mem_mb);
-      document.getElementById('infoDisk').textContent = usage((r.disk_bytes || 0)/1048576, pl.disk_mb);
-      document.getElementById('infoNetIn').textContent = r.network_rx_bytes ? (r.network_rx_bytes/1048576).toFixed(1) + 'MB' : '—';
-      document.getElementById('infoNetOut').textContent = r.network_tx_bytes ? (r.network_tx_bytes/1048576).toFixed(1) + 'MB' : '—';
+      const hasLim = !!data.panel_limits || !!d;
+      if(hasRes || d) setState(d ? d.state : r.current_state);
+
+      const usage = (usedMb, limMb) => (!hasRes && !d) || !hasLim ? null : fmtMB(usedMb) + ' / ' + (limMb ? fmtMB(limMb) : 'Unlimited');
+      const put = (id, text) => setInfo(id, text == null ? 'Error' : text, text == null);
+
+      put('infoAddress', data.address || (d && !data.panel_unreachable ? (d.state === 'running' ? 'Running' : 'Offline') : null));
+      put('infoUptime', hasRes || d ? (r.uptime ? fmtUptime(r.uptime) : '—') : null);
+      put('infoCpu', hasRes || d ? (r.cpu_absolute ?? '—') + '%' : null);
+      put('infoMemory', usage((r.memory_bytes || 0)/1048576, pl.mem_mb));
+      put('infoDisk', usage((r.disk_bytes || 0)/1048576, pl.disk_mb));
+      put('infoNetIn', hasRes || d ? (r.network_rx_bytes ? (r.network_rx_bytes/1048576).toFixed(1) + 'MB' : '—') : null);
+      put('infoNetOut', hasRes || d ? (r.network_tx_bytes ? (r.network_tx_bytes/1048576).toFixed(1) + 'MB' : '—') : null);
 
       if(d){
         const fmt = (used, limit, pct, unit) => limit ? `${used}${unit} / ${limit}${unit} (${pct}%)` : `${used}${unit}`;
-        document.getElementById('infoCpu').textContent = fmt(d.cpu_used, d.cpu_limit, d.cpu_pct, '%');
-        document.getElementById('infoMemory').textContent = usage(d.mem_used_mb || 0, d.mem_limit_mb || pl.mem_mb);
-        document.getElementById('infoDisk').textContent = usage(d.disk_used_mb || 0, d.disk_limit_mb || pl.disk_mb);
-        document.getElementById('infoAddress').textContent = d.state === 'running' ? 'Running' : 'Offline';
-        document.getElementById('infoUptime').textContent = d.state === 'running' ? fmtUptime(d.uptime_ms) : '—';
+        put('infoCpu', fmt(d.cpu_used, d.cpu_limit, d.cpu_pct, '%'));
+        put('infoMemory', fmtMB(d.mem_used_mb || 0) + ' / ' + ((d.mem_limit_mb || pl.mem_mb) ? fmtMB(d.mem_limit_mb || pl.mem_mb) : 'Unlimited'));
+        put('infoDisk', fmtMB(d.disk_used_mb || 0) + ' / ' + ((d.disk_limit_mb || pl.disk_mb) ? fmtMB(d.disk_limit_mb || pl.disk_mb) : 'Unlimited'));
+        put('infoUptime', d.state === 'running' ? fmtUptime(d.uptime_ms) : '—');
       }
 
-      pushGraphPoint('cpu', r.cpu_absolute || 0, (data.limits && data.limits.cpuLimit) || pl.cpu || null);
-      pushGraphPoint('memory', r.memory_bytes ? r.memory_bytes/1048576 : 0, (data.limits && data.limits.ramLimit) || pl.mem_mb || null);
-      pushNetworkPoint((r.network_rx_bytes||0)/1048576, (r.network_tx_bytes||0)/1048576);
-      updateScaleLabels(data.limits || {});
+      if(data.panel_unreachable){
+        const now = Date.now();
+        if(now - connWarnAt > 60000){
+          connWarnAt = now;
+          termLine('\u001b[91m[✖] ' + GENERIC_ERR + '\u001b[0m');
+        }
+      }
+
+      if(hasRes || d){
+        pushGraphPoint('cpu', r.cpu_absolute || 0, (data.limits && data.limits.cpuLimit) || pl.cpu || null);
+        pushGraphPoint('memory', r.memory_bytes ? r.memory_bytes/1048576 : 0, (data.limits && data.limits.ramLimit) || pl.mem_mb || null);
+        pushNetworkPoint((r.network_rx_bytes||0)/1048576, (r.network_tx_bytes||0)/1048576);
+        updateScaleLabels(data.limits || {});
+      }
     }catch(err){
-      ['infoMemory','infoDisk'].forEach(id => { const el = document.getElementById(id); if(el) el.textContent = '—'; });
+      infoFail();
     }
   }
 
@@ -1004,7 +1030,7 @@
         return;
       }
       setTimeout(refreshTerminal, 800);
-    }catch(err){ termPrint('[✖] Could not reach the backend'); }
+    }catch(err){ termPrint('[✖] '+GENERIC_ERR); }
   });
 
 
@@ -1020,8 +1046,9 @@
     document.getElementById('advOverlay').classList.remove('show');
     document.getElementById('backupOverlay').classList.remove('show');
     document.getElementById('dbOverlay').classList.remove('show');
+    document.getElementById('networkOverlay').classList.remove('show');
     hideMcViews();
-    ['navTerminal','navFiles','navSchedule','navUsers','navDatabase','navBackup','navStartup','navAdvanced','navConfig','navPlugins','navMembers','navAccess','navWorlds']
+    ['navTerminal','navNetwork','navFiles','navSchedule','navUsers','navDatabase','navBackup','navStartup','navAdvanced','navConfig','navPlugins','navMembers','navAccess','navWorlds']
       .forEach(id => { document.getElementById(id).style.display = 'none'; });
     stopTerminalPolling();
     disconnectConsoleSocket();
@@ -1034,6 +1061,7 @@
     document.getElementById('scheduleOverlay').classList.remove('show');
     document.getElementById('membersOverlay').classList.remove('show');
     document.getElementById('accessOverlay').classList.remove('show');
+    document.getElementById('networkOverlay').classList.remove('show');
     ['accountOverlay','customizeOverlay','apiOverlay','activityOverlay'].forEach(o => document.getElementById(o).classList.remove('show'));
   }
 
@@ -1045,6 +1073,7 @@
     else document.getElementById('navAdvanced').after(sched);
     const on = (id, v) => { document.getElementById(id).style.display = v ? 'flex' : 'none'; };
     on('navTerminal', true);
+    on('navNetwork', true);
     on('navFiles', true);
     on('navSchedule', !cloud);
     on('navConfig', mc);
@@ -1415,7 +1444,7 @@
         serverUsersList.appendChild(row);
       });
     }catch(err){
-      serverUsersList.innerHTML = '<p class="server-list-empty">Could not reach the backend.</p>';
+      serverUsersList.innerHTML = '<p class="server-list-empty">We are having problem while connecting to your server.</p>';
     }
   }
 
@@ -1517,7 +1546,7 @@
       refreshServerUsersList();
       if(window.xtShowAddUser) window.xtShowAddUser(false);
     }catch(err){
-      addUserError.textContent = 'Could not reach the backend -- is notify_login.py running?';
+      addUserError.textContent = 'We are having problem while connecting to your server.';
       addUserError.classList.add('show');
       label.textContent = 'Add User';
     }
@@ -1559,7 +1588,7 @@
       closeConfirmRemoveUser();
       refreshServerUsersList();
     }catch(err){
-      alert('Could not reach the backend -- is notify_login.py running?');
+      alert('We are having problem while connecting to your server.');
       yesBtn.textContent = 'Yes, remove';
     }
   });
@@ -1714,15 +1743,20 @@
       const mb = v => { v = +v || 0; return v >= 1024 ? (v/1024).toFixed(2).replace(/\.?0+$/, '') + 'GB' : v.toFixed(v < 10 ? 2 : 1).replace(/\.?0+$/, '') + 'MB'; };
       if(data.ok){
         cpuEl.title = ramEl.title = diskEl.title = '';
-        cpuEl.textContent = `${data.cpu_percent}% / ${data.cpu_limit ? data.cpu_limit + '%' : '∞'}`;
-        ramEl.textContent = `${mb(data.memory_mb)} / ${data.ram_limit ? mb(data.ram_limit) : '∞'}`;
-        diskEl.textContent = `${mb(data.disk_mb)} / ${data.storage_limit ? mb(data.storage_limit) : '∞'}`;
+        const bad = !!data.limits_error;
+        [cpuEl, ramEl, diskEl].forEach(el => el.classList.toggle('info-err', bad));
+        cpuEl.textContent = `${data.cpu_percent}% / ${bad ? 'Error' : data.cpu_limit ? data.cpu_limit + '%' : '∞'}`;
+        ramEl.textContent = `${mb(data.memory_mb)} / ${bad ? 'Error' : data.ram_limit ? mb(data.ram_limit) : '∞'}`;
+        diskEl.textContent = `${mb(data.disk_mb)} / ${bad ? 'Error' : data.storage_limit ? mb(data.storage_limit) : '∞'}`;
       }else{
-        cpuEl.textContent = ramEl.textContent = diskEl.textContent = '—';
-        cpuEl.title = ramEl.title = diskEl.title = data.error || 'Stats unavailable';
+        cpuEl.textContent = ramEl.textContent = diskEl.textContent = 'Error';
+        [cpuEl, ramEl, diskEl].forEach(el => el.classList.add('info-err'));
+        cpuEl.title = ramEl.title = diskEl.title = GENERIC_ERR;
       }
     }catch(err){
-      cpuEl.textContent = ramEl.textContent = diskEl.textContent = '—';
+      cpuEl.textContent = ramEl.textContent = diskEl.textContent = 'Error';
+      [cpuEl, ramEl, diskEl].forEach(el => el.classList.add('info-err'));
+      cpuEl.title = ramEl.title = diskEl.title = GENERIC_ERR;
     }
   }
 
@@ -2803,7 +2837,7 @@
         });
         const raw = await res.text();
         let data;
-        try{ data = JSON.parse(raw); }catch(e){ throw new Error(`Bad backend response (HTTP ${res.status}).`); }
+        try{ data = JSON.parse(raw); }catch(e){ throw new Error(GENERIC_ERR); }
         if(req !== startupReq) return;
         if(!res.ok || !data.ok){
           failStartup(data.error || `Could not load startup info (HTTP ${res.status}).`);
@@ -2840,7 +2874,7 @@
         setStartupBusy(false);
       }catch(err){
         if(req !== startupReq) return;
-        failStartup(err && err.name === 'AbortError' ? 'Backend timed out.' : ((err && err.message) || 'Could not reach the backend.'));
+        failStartup(err && err.name === 'AbortError' ? 'We are having problem while connecting to your server.' : ((err && err.message) || 'We are having problem while connecting to your server.'));
       }finally{
         clearTimeout(timer);
       }
@@ -2890,7 +2924,7 @@
         startupSaveBtn.textContent = 'Saved';
         setTimeout(() => { startupSaveBtn.classList.remove('saved'); startupSaveBtn.textContent = 'Save'; }, 1200);
       }catch(err){
-        startupError.textContent = 'Could not reach the backend.';
+        startupError.textContent = 'We are having problem while connecting to your server.';
       }
     });
 
@@ -2916,7 +2950,7 @@
       body: JSON.stringify({ idToken, docId: pendingControlDoc, ...body })
     });
     let data;
-    try{ data = await res.json(); }catch(e){ throw new Error(`Bad backend response (HTTP ${res.status}).`); }
+    try{ data = await res.json(); }catch(e){ throw new Error(GENERIC_ERR); }
     if(!res.ok || !data.ok) throw new Error(data.error || `Request failed (HTTP ${res.status}).`);
     return data;
   }
@@ -3050,7 +3084,7 @@
       body: JSON.stringify({ idToken, docId: pendingControlDoc, ...body })
     });
     let data;
-    try{ data = await res.json(); }catch(e){ throw new Error(`Bad backend response (HTTP ${res.status}).`); }
+    try{ data = await res.json(); }catch(e){ throw new Error(GENERIC_ERR); }
     if(!res.ok || !data.ok) throw new Error(data.error || `Request failed (HTTP ${res.status}).`);
     return data;
   }
@@ -3307,7 +3341,7 @@
       body: JSON.stringify({ idToken, docId: pendingControlDoc, ...body })
     });
     let data;
-    try{ data = await res.json(); }catch(e){ throw new Error(`Bad backend response (HTTP ${res.status}).`); }
+    try{ data = await res.json(); }catch(e){ throw new Error(GENERIC_ERR); }
     if(!res.ok || !data.ok) throw new Error(data.error || `Request failed (HTTP ${res.status}).`);
     return data;
   }
@@ -3534,7 +3568,7 @@
     const idToken = await user.getIdToken();
     const res = await fetch(`${API_BASE}${path}`, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ idToken, docId: pendingControlDoc, ...body }) });
     let data;
-    try{ data = await res.json(); }catch(e){ throw new Error(`Bad backend response (HTTP ${res.status}).`); }
+    try{ data = await res.json(); }catch(e){ throw new Error(GENERIC_ERR); }
     if(!res.ok || !data.ok) throw new Error(data.error || `Request failed (HTTP ${res.status}).`);
     return data;
   }
@@ -3743,7 +3777,7 @@
     const idToken = await user.getIdToken();
     const res = await fetch(`${API_BASE}${path}`, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ idToken, docId: pendingControlDoc, ...body }) });
     let data;
-    try{ data = await res.json(); }catch(e){ throw new Error(`Bad backend response (HTTP ${res.status}).`); }
+    try{ data = await res.json(); }catch(e){ throw new Error(GENERIC_ERR); }
     if(!res.ok || !data.ok) throw new Error(data.error || `Request failed (HTTP ${res.status}).`);
     return data;
   }
@@ -3926,7 +3960,7 @@
     const idToken = await user.getIdToken();
     const res = await fetch(`${API_BASE}${path}`, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ idToken, ...payload }) });
     let data;
-    try{ data = await res.json(); }catch(e){ throw new Error(`Bad backend response (HTTP ${res.status}).`); }
+    try{ data = await res.json(); }catch(e){ throw new Error(GENERIC_ERR); }
     if(!res.ok || !data.ok) throw new Error(data.error || `Request failed (HTTP ${res.status}).`);
     return data;
   }
@@ -4185,7 +4219,7 @@
     const idToken = await user.getIdToken();
     const res = await fetch(`${API_BASE}${path}`, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ idToken, docId: pendingControlDoc, ...body }) });
     let data;
-    try{ data = await res.json(); }catch(e){ throw new Error(`Bad backend response (HTTP ${res.status}).`); }
+    try{ data = await res.json(); }catch(e){ throw new Error(GENERIC_ERR); }
     if(!res.ok || !data.ok) throw new Error(data.error || `Request failed (HTTP ${res.status}).`);
     return data;
   }
@@ -4475,8 +4509,9 @@
 
   $('adminSidebar').addEventListener('click', e => {
     const b = e.target.closest('.sidebar-btn');
-    if(!b || b.id === 'navAdvanced' || b.id === 'navBackup' || b.id === 'navDatabase') return;
+    if(!b || b.id === 'navAdvanced' || b.id === 'navBackup' || b.id === 'navDatabase' || b.id === 'navNetwork') return;
     ov.classList.remove('show');
+    $('networkOverlay').classList.remove('show');
     $('backupOverlay').classList.remove('show');
     $('dbOverlay').classList.remove('show');
   }, true);
@@ -4498,7 +4533,7 @@
     const idToken = await user.getIdToken();
     const res = await fetch(`${API_BASE}${path}`, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ idToken, ...payload }) });
     let data;
-    try{ data = await res.json(); }catch(e){ throw new Error(`Bad backend response (HTTP ${res.status}).`); }
+    try{ data = await res.json(); }catch(e){ throw new Error(GENERIC_ERR); }
     if(!res.ok || !data.ok) throw new Error(data.error || `Request failed (HTTP ${res.status}).`);
     return data;
   }
@@ -4630,8 +4665,8 @@
 
 (function(){
   const BASE = window.XT_BASE || '/';
-  const PAGE_NAV = { console: 'navTerminal', files: 'navFiles', startup: 'navStartup', schedule: 'navSchedule', users: 'navUsers', database: 'navDatabase', backup: 'navBackup', advanced: 'navAdvanced', config: 'navConfig', plugins: 'navPlugins', members: 'navMembers', access: 'navAccess', worlds: 'navWorlds' };
-  const OV_PAGE = { serverControlOverlay: 'console', filesOverlay: 'files', startupOverlay: 'startup', scheduleOverlay: 'schedule', pluginsOverlay: 'plugins', mcConfigOverlay: 'config', membersOverlay: 'members', accessOverlay: 'access', mcBlankOverlay: 'worlds', dbOverlay: 'database', backupOverlay: 'backup', advOverlay: 'advanced', serverUsersOverlay: 'users' };
+  const PAGE_NAV = { console: 'navTerminal', network: 'navNetwork', files: 'navFiles', startup: 'navStartup', schedule: 'navSchedule', users: 'navUsers', database: 'navDatabase', backup: 'navBackup', advanced: 'navAdvanced', config: 'navConfig', plugins: 'navPlugins', members: 'navMembers', access: 'navAccess', worlds: 'navWorlds' };
+  const OV_PAGE = { serverControlOverlay: 'console', networkOverlay: 'network', filesOverlay: 'files', startupOverlay: 'startup', scheduleOverlay: 'schedule', pluginsOverlay: 'plugins', mcConfigOverlay: 'config', membersOverlay: 'members', accessOverlay: 'access', mcBlankOverlay: 'worlds', dbOverlay: 'database', backupOverlay: 'backup', advOverlay: 'advanced', serverUsersOverlay: 'users' };
   const OV_GLOBAL = { manageServersOverlay: 'manage', accountOverlay: 'account', customizeOverlay: 'customize', apiOverlay: 'api', activityOverlay: 'activity' };
   const GLOBAL_NAV = { manage: 'navManageServers', account: 'navAccount', customize: 'navCustomize', api: 'navApi', activity: 'navActivity' };
   const $ = id => document.getElementById(id);
@@ -4754,4 +4789,85 @@
       wasIn = false;
     }
   });
+})();
+
+
+(function(){
+  const $ = id => document.getElementById(id);
+  let req = 0;
+  let cur = { host: '', port: '', id: '' };
+
+  const say = (m, bad) => { const e = $('netStatus'); e.textContent = m || ''; e.classList.toggle('err', !!bad); };
+
+  function paint(host, port, id, bad){
+    [['netIpVal', host], ['netPortVal', port], ['netIdVal', id]].forEach(([k, v]) => {
+      const e = $(k);
+      e.textContent = bad ? 'Error' : (v || '—');
+      e.classList.toggle('info-err', !!bad);
+    });
+  }
+
+  async function copy(text){
+    try{ await navigator.clipboard.writeText(text); return true; }catch(e){}
+    try{
+      const t = document.createElement('textarea');
+      t.value = text;
+      t.style.cssText = 'position:fixed;opacity:0;top:0;left:0';
+      document.body.appendChild(t);
+      t.select();
+      const ok = document.execCommand('copy');
+      t.remove();
+      return ok;
+    }catch(e){ return false; }
+  }
+
+  async function doCopy(el, text, label){
+    if(!text) return;
+    const ok = await copy(text);
+    if(ok){
+      el.classList.add('copied');
+      clearTimeout(el._t);
+      el._t = setTimeout(() => el.classList.remove('copied'), 1200);
+      say('Copied ' + label + '.');
+    }else say('Copy failed.', true);
+  }
+
+  async function load(){
+    const my = ++req;
+    cur = { host: '', port: '', id: '' };
+    paint('…', '…', '…');
+    say('');
+    try{
+      const user = auth.currentUser;
+      if(!user || !pendingControlDoc) throw 0;
+      const idToken = await user.getIdToken();
+      const res = await fetch(`${API_BASE}/server_console`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ idToken, docId: pendingControlDoc }) });
+      const d = await res.json();
+      if(my !== req) return;
+      if(!res.ok || !d.ok || !d.host) throw 0;
+      cur = { host: String(d.host), port: d.port ? String(d.port) : '', id: d.server_id ? String(d.server_id) : '' };
+      paint(cur.host, cur.port, cur.id);
+    }catch(e){
+      if(my !== req) return;
+      paint('', '', '', true);
+      say(GENERIC_ERR, true);
+    }
+  }
+
+  $('navNetwork').addEventListener('click', () => {
+    if(!pendingControlDoc) return;
+    hideAllScreens();
+    $('networkOverlay').classList.add('show');
+    showControlNav();
+    load();
+  });
+
+  const act = (el, fn) => {
+    el.addEventListener('click', fn);
+    el.addEventListener('keydown', e => { if(e.key === 'Enter' || e.key === ' '){ e.preventDefault(); fn(); } });
+  };
+  act($('netIp'), () => doCopy($('netIp'), cur.host, 'IP'));
+  act($('netPort'), () => doCopy($('netPort'), cur.port, 'port'));
+  act($('netId'), () => doCopy($('netId'), cur.id, 'server ID'));
+  $('netCopy').addEventListener('click', () => doCopy($('netCopy'), cur.host ? (cur.port ? cur.host + ':' + cur.port : cur.host) : '', 'IP and port'));
 })();
