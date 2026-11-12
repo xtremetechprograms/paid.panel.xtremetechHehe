@@ -1071,6 +1071,7 @@
     const sched = document.getElementById('navSchedule');
     if(mc) document.getElementById('navPlugins').before(sched);
     else document.getElementById('navAdvanced').after(sched);
+    sched.after(document.getElementById('navNetwork'));
     const on = (id, v) => { document.getElementById(id).style.display = v ? 'flex' : 'none'; };
     on('navTerminal', true);
     on('navNetwork', true);
@@ -4871,3 +4872,11 @@
   act($('netId'), () => doCopy($('netId'), cur.id, 'server ID'));
   $('netCopy').addEventListener('click', () => doCopy($('netCopy'), cur.host ? (cur.port ? cur.host + ':' + cur.port : cur.host) : '', 'IP and port'));
 })();
+
+document.addEventListener('click', e => {
+  const b = e.target.closest && e.target.closest('.graph-box');
+  if(!b || !window.matchMedia('(max-width:700px)').matches) return;
+  b.classList.add('pop');
+  clearTimeout(b._pt);
+  b._pt = setTimeout(() => b.classList.remove('pop'), 350);
+});
